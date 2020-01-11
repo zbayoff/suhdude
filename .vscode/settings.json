@@ -1,0 +1,8 @@
+{
+    "python.pythonPath": "zach_env/bin/python3",
+    "[python]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4  
+      }
+      
+}
