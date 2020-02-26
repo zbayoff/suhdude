@@ -1,8 +1,9 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');
 require('dotenv').config();
-require('./models/group');
-require('./models/message');
+require('./api/models/group');
+require('./api/models/message');
 
 const { DB_PASS, DB_NAME } = process.env;
 
@@ -23,10 +24,14 @@ mongoose
 		process.exit();
 	});
 
-const groupmeRoutes = require('./routes/groupmeRoutes');
-const suhdudeRoutes = require('./routes/suhdudeRoutes');
+mongoose.set('debug', true);
+
+const groupmeRoutes = require('./api/routes/groupmeRoutes');
+const suhdudeRoutes = require('./api/routes/suhdudeRoutes');
 
 const app = express();
+
+app.use(cors());
 
 app.use('/groupmeApi', groupmeRoutes);
 app.use('/api', suhdudeRoutes);

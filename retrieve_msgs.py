@@ -184,11 +184,13 @@ def countMsgs(group_name, group_id, direct_msgs, csv_file=None, processTextFunc=
 	users = {}
 	# get current msg as well
 	lastMsgId = str(int(getLastMsgId(group_id, direct_msgs))+1)
+	print ("lastMsgId")
+	print (lastMsgId)
 	while (curCount < totalCount):
 		if curCount % 100 == 0:
 			print (curCount)
 		msgs = getMessages(group_id, direct_msgs, lastMsgId)
-		print (msgs)
+		# print (msgs)
 		if not msgs:
 			break
 		if direct_msgs:

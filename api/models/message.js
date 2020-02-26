@@ -7,7 +7,7 @@ const messageSchema = new Schema(
 		_id: String,
 		id: String,
 		text: String,
-		created_at: Number,
+		created_at: { type: Number, index: true },
 		attachments: Array,
 		favorited_by: Array,
 		avatar_url: String,
@@ -23,6 +23,6 @@ const messageSchema = new Schema(
 	{ strict: false }
 );
 
-messageSchema.index({ text: 'text', created_at: 'created_at' });
+messageSchema.index({ text: 'text' });
 
 module.exports = mongoose.model('Message', messageSchema);

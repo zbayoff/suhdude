@@ -7,7 +7,7 @@ const Message = mongoose.model('Message');
 
 require('dotenv').config();
 
-const config = require('../config');
+const config = require('../../config');
 
 function getMessages(
 	groupID,
@@ -34,6 +34,22 @@ function getMessages(
 function getGroup(groupID) {
 	const options = {
 		uri: `${config.url}/groups/${groupID}?token=${config.TOKEN}`,
+		json: true,
+	};
+
+	return request
+		.get(options)
+		.then(data => {
+			return data.response;
+		})
+		.catch(err => {
+			return err;
+		});
+}
+
+function getGroups() {
+	const options = {
+		uri: `${config.url}/groups?token=${config.TOKEN}`,
 		json: true,
 	};
 
@@ -90,14 +106,16 @@ function totalMessageCountHandler(groupID) {
 // }
 
 // upload all messages
-async function uploadAllMessages(groupID) {
+async function uploadAllMessages(req, res) {
+	const groupID = req.params.group_id;
+
 	let messageCount = 0;
 	let lastMsgIDs = (await lastMsgID(groupID)) + 1;
 	const totalMessageCount = await totalMessageCountHandler(groupID);
 
 	// console.log('lastMsgIDs: ', lastMsgIDs);
 	const all = [];
-	while (messageCount < 1000) {
+	while (messageCount < totalMessageCount) {
 		console.log('Getting messages from lastID: ', lastMsgIDs);
 		console.log('messageCount: ', messageCount);
 		const lastMessages = await getMessages(groupID, lastMsgIDs);
@@ -108,9 +126,16 @@ async function uploadAllMessages(groupID) {
 		all.push(...lastMessages);
 	}
 
-	console.log(all);
+	// console.log(all);
 
-	return Message.insertMany(all);
+	Message.insertMany(all)
+		.then(response => {
+			console.log('Got all messages: ', response);
+			res.send(response);
+		})
+		.catch(err => {
+			res.send(err);
+		});
 }
 
 function writeToCSV(csvResults) {
@@ -137,6 +162,7 @@ function writeToCSV(csvResults) {
 // 		// const csvResults = json2csvParser.parse(messages);
 // 		// // const jsonResults = JSON.stringify(messages);
 // 		// writeToCSV(csvResults);
+// 		return messages;
 // 	})
 // 	.catch(err => {
 // 		throw err;
@@ -148,4 +174,5 @@ module.exports = {
 	getGroup,
 	lastMsgID,
 	totalMessageCountHandler,
+	getGroups,
 };

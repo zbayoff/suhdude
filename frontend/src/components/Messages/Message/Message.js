@@ -1,0 +1,216 @@
+import React, { Component } from 'react';
+import moment from 'moment';
+import Avatar from '@material-ui/core/Avatar';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemAvatar from '@material-ui/core/ListItemAvatar';
+import ListItemText from '@material-ui/core/ListItemText';
+import FavoriteIcon from '@material-ui/icons/Favorite';
+import FavoriteBorderIcon from '@material-ui/icons/FavoriteBorder';
+import Badge from '@material-ui/core/Badge';
+import Tooltip from '@material-ui/core/Tooltip';
+import Typography from '@material-ui/core/Typography';
+import { withStyles } from '@material-ui/core/styles';
+
+const HtmlTooltip = withStyles(theme => ({
+	tooltip: {
+		display: 'flex',
+		flexDirection: 'column',
+		backgroundColor: '#f5f5f9',
+		color: 'rgba(0, 0, 0, 0.87)',
+		maxWidth: 220,
+		fontSize: theme.typography.pxToRem(12),
+		border: '1px solid #dadde9',
+	},
+}))(Tooltip);
+
+class Message extends Component {
+	state = {
+		favoritedUsers: '',
+	};
+
+	getUserInfo = userId => {
+		// console.log(this.props.group)
+		const users = this.props.group.members;
+
+		const userInfo = users.find(user => {
+			return user.user_id === userId;
+		});
+
+		// console.log('userInfo: ', userInfo)
+
+		return userInfo;
+	};
+
+	hoverFavoritedMessageHandler = event => {
+		let favoritedBy = [];
+		if (this.props.message.favorited_by) {
+			favoritedBy = this.props.message.favorited_by.map(user => {
+				return (
+					<p style={{ margin: '0' }} key={user}>
+						{this.getUserInfo(user)['nickname']}
+					</p>
+				);
+			});
+			this.setState({ favoritedUsers: favoritedBy });
+		}
+	};
+
+	messageClickHandler = (data) => {
+		this.props.messageClickHandler()
+	}
+
+	render() {
+		// console.log('[Message.js] render');
+
+		// console.log('[Message.js] this.props.message: ', this.props.message);
+
+		console.log('this.props.clickHandler: ', this.props.clickHandler);
+
+		let likedMessageIcon = <FavoriteBorderIcon />;
+		let favoritedUsers = '';
+
+		if (this.state.favoritedUsers) {
+			favoritedUsers = this.state.favoritedUsers;
+		}
+
+		if (this.props.message.favorited_by.length) {
+			likedMessageIcon = (
+				<HtmlTooltip title={<React.Fragment>{favoritedUsers}</React.Fragment>}>
+					<Badge
+						onMouseEnter={this.hoverFavoritedMessageHandler}
+						badgeContent={this.props.message.favorited_by.length}
+						color="primary"
+					>
+						<FavoriteIcon />
+					</Badge>
+				</HtmlTooltip>
+			);
+		}
+
+		let avatar = null;
+
+		// console.log('this.props.message.user_id: ', this.props.message.user_id);
+
+		if (
+			this.props.message.user_id === 'system' ||
+			this.props.message.user_id === 'calendar'
+		) {
+			avatar = (
+				<ListItemAvatar>
+					<Avatar alt="Travis Howard" src="" />
+				</ListItemAvatar>
+			);
+		} else {
+			avatar = (
+				<ListItemAvatar>
+					<Avatar
+						alt="Travis Howard"
+						src={this.getUserInfo(this.props.message.user_id)['image_url']}
+					/>
+				</ListItemAvatar>
+			);
+		}
+
+		let messageTime = null;
+
+		if (this.props.displayMessageTime) {
+			let format = '';
+
+			// console.log('moment().unix(): ', moment.unix().format('ddd, hh:ss'))
+
+			// first check if same year
+
+			if (moment.unix(this.props.message.created_at).isSame(moment(), 'day')) {
+				format = 'HH:mm';
+			} else if (
+				moment.unix(this.props.message.created_at).isSame(moment(), 'week')
+			) {
+				format = 'ddd, HH:mm';
+			} else if (
+				moment.unix(this.props.message.created_at).isSame(moment(), 'month')
+			) {
+				format = 'MMM D, HH:mm';
+			} else if (
+				moment.unix(this.props.message.created_at).isSame(moment(), 'year')
+			) {
+				format = 'MMM D, HH:mm';
+			} else {
+				format = 'MMM D, YYYY [at] HH:mm';
+			}
+
+			// check if current year
+
+			// check if current month
+
+			messageTime = (
+				<Typography
+					align={'center'}
+					style={{ position: 'absolute', width: '100%', top: '-10px' }}
+				>
+					{moment.unix(this.props.message.created_at).format(format)}
+				</Typography>
+			);
+		}
+
+		return (
+			<ListItem
+				key={this.props.message.id}
+				alignItems="flex-start"
+				style={{ paddingTop: '12px', paddingBottom: '12px', cursor: 'pointer' }}
+				onClick={this.props.clickHandler}
+			>
+				{messageTime}
+				{avatar}
+
+				{/* How to handle messages sent by system? */}
+
+				{/* if message contains an external link, wrap in an iframe like <iframe src="https://en.wikipedia.org/" width = "500px" height = "500px"></iframe>  */}
+
+				<ListItemText
+					primary={
+						<Typography variant={'body2'}>{this.props.message.name}</Typography>
+					}
+					secondary={
+						<Typography
+							component={'div'}
+							variant={'body1'}
+							style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+						>
+							{this.props.message.text
+								? this.props.message.text
+								: this.props.attachments}
+						</Typography>
+					}
+				/>
+
+				{likedMessageIcon}
+			</ListItem>
+		);
+	}
+}
+
+// const Message = props => {
+// 	// console.log(props.attachments)
+
+// let likedMessageIcon = <FavoriteBorderIcon />;
+// if (props.message.favorited_by.length) {
+// 	likedMessageIcon = (
+// 		<Badge badgeContent={props.message.favorited_by.length} color="primary">
+// 			<FavoriteIcon />
+// 		</Badge>
+// 	);
+// }
+
+// 	const hoverFavoritedMessageHandler = (event) => {
+// 		console.log(event.target)
+// 		const favoritedBy = props.message.favorited_by
+// 			.map(user => {
+// 				return user;
+// 			})
+// 			.join('\n');
+// 		console.log('favoritedBy: ', favoritedBy);
+// 	};
+
+// };
+
+export default Message;

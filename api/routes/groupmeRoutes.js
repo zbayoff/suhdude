@@ -16,6 +16,20 @@ router.get('/group/:group_id', function(req, res) {
 		});
 });
 
+router.get('/groups', function(req, res) {
+	groupmeController
+		.getGroups()
+		.then(data => {
+			res.send(data);
+		})
+		.catch(err => {
+			res.send(err);
+		});
+});
+
+router.get('/uploadAllMessages/:group_id', groupmeController.uploadAllMessages);
+router.get('/messages/:group_id', groupmeController.getMessages);
+
 // router.get('/updateMessages/:group_id', function(req, res) {
 // 	const groupID = req.params.group_id;
 
