@@ -29,6 +29,8 @@ import moment from 'moment';
 
 import { withStyles } from '@material-ui/core/styles';
 
+import './Dashboard.scss';
+
 const timeSelectOptions = [
 	{ key: '1d', text: 'Past 1 day' },
 	{ key: '1w', text: 'Past 1 week' },
@@ -46,6 +48,7 @@ const styles = theme => {
 				},
 			},
 		},
+		
 		primary: {},
 		icon: {},
 	};
@@ -63,56 +66,123 @@ class Dashboard extends Component {
 		datePickerOpen: false,
 		focusedInput: 'startDate',
 		selectedUsers: [],
+		chart: null,
 	};
 
 	componentDidMount() {
 		console.log('[Dashboard.js] - ComponentDidMount');
-		this.fetchMessages();
-	}
-
-	componentDidUpdate(prevProps) {
-		console.log('[Dashboard.js] - ComponentDidUpdate');
-	}
-
-	fetchMessages() {
-		const fromTS = this.state.startDate.unix();
-		const toTS = this.state.endDate.unix();
-		
-		axios
-			.get('http://localhost:8080/api/updateMessages/18834987?num=200')
-			.then(response => {
-				console.log('updateMessages response: ', response);
-				axios
-					.get('http://localhost:8080/api/addMessages/18834987')
-					.then(response => {
-						console.log('addMessages response: ', response);
-						axios
-							.get(
-								`http://localhost:8080/api/messages`, {
-									params: {
-										sort: 'asc',
-										fromTS: fromTS,
-										toTS: toTS,
-										userIDs: [],
-										favorited: false,
-										dashboard: true
-									}
-								}
-							)
-							.then(response => {
-								const messages = response.data;
-								this.setState({ messages: [] });
-								this.setState({
-									messages: [...this.state.messages, ...messages],
-								});
-							})
-							.catch(err => console.log(err));
+		this.updatedMessages()
+			.then(() => {
+				console.log('updateMessages successfully');
+				this.addMessages()
+					.then(() => {
+						console.log('addedMessages successfully');
+						this.fetchMessages();
 					})
 					.catch(err => {
 						console.log(err);
 					});
 			})
+			.catch(err => {
+				console.log(err);
+			});
+	}
+
+	updatedMessages() {
+		return axios
+			.get('http://localhost:8080/api/updateMessages/18834987?num=200')
+			.then(response => {
+				console.log('updateMessages response: ', response);
+			})
 			.catch(err => console.log(err));
+	}
+
+	addMessages() {
+		return axios
+			.get('http://localhost:8080/api/addMessages/18834987')
+			.then(response => {
+				console.log('addMessages repspone: ', response);
+			})
+			.catch(err => console.log(err));
+	}
+
+	fetchMessages() {
+		const fromTS = this.state.startDate.unix();
+		const toTS = this.state.endDate.unix();
+
+		axios
+			.get(`http://localhost:8080/api/messages`, {
+				params: {
+					sort: 'asc',
+					fromTS: fromTS,
+					toTS: toTS,
+					userIDs: [],
+					favorited: false,
+					dashboard: true,
+					skip: 0,
+				},
+			})
+			.then(response => {
+				const messages = response.data;
+				this.setState({ messages: [] });
+				this.setState({
+					messages: [...this.state.messages, ...messages],
+				});
+				this.createChart();
+			})
+			.catch(err => console.log(err));
+	}
+
+	createChart() {
+		let messages = this.state.messages;
+
+		let series = new TimeSeries({
+			name: 'messages',
+			columns: ['time', 'value'],
+			utc: false,
+			points: messages.map((message, index) => {
+				return [moment.unix(message.created_at).valueOf(), index];
+			}),
+		});
+
+		const style = styler([{ key: 'value', color: '#3f51b5', width: 2 }]);
+
+		const yAxisStyles = {
+			label: {
+				'font-size': 16,
+			},
+		};
+
+		const seriesTimerange = series.timerange();
+
+		if (seriesTimerange) {
+			this.setState({
+				chart: (
+					<Resizable>
+						<ChartContainer
+							titleStyle={{ fill: '#555', fontWeight: 500 }}
+							timeRange={seriesTimerange}
+						>
+							<ChartRow height="300">
+								<YAxis
+									id="messages"
+									label="# messages"
+									min={0}
+									max={messages.length}
+									style={yAxisStyles} // Default label color fontWeight: 100, fontSize: 12, font: '"Goudy Bookletter 1911", sans-serif"' }
+									format=".0f"
+								/>
+								<Charts>
+									<LineChart axis="messages" series={series} style={style} />
+								</Charts>
+							</ChartRow>
+						</ChartContainer>
+					</Resizable>
+				),
+			});
+		}
+
+		
 	}
 
 	startDateChangeHandler = date => {
@@ -161,13 +231,10 @@ class Dashboard extends Component {
 				break;
 		}
 
-		// console.log('startDate:', startDate);
-
 		this.setState({
 			selectedKey: key,
 			anchorEl: null,
 		});
-		// console.log('index: ', index);
 	};
 
 	handleClose = () => {
@@ -175,10 +242,11 @@ class Dashboard extends Component {
 	};
 
 	onDatesChange = ({ startDate, endDate }) => {
-
 		this.setState({ startDate, endDate }, () => {
 			if (startDate && endDate) {
-				this.fetchMessages();
+				if (startDate.isValid() && endDate.isValid()) {
+					this.fetchMessages();
+				}
 			}
 		});
 	};
@@ -190,12 +258,11 @@ class Dashboard extends Component {
 	render() {
 		console.log('[Dashboard.js] - render()');
 
-		let messages;
-		let series;
-		let chart = <CircularProgress />;
 		let numMessages = <CircularProgress />;
-		let groupName = <CircularProgress />;
+		let groupName = '';
 		let groupStartDate = '';
+		let groupStartDateWrapper = <CircularProgress />;
+
 		const { anchorEl } = this.state;
 		const { classes } = this.props;
 
@@ -203,56 +270,8 @@ class Dashboard extends Component {
 			numMessages = this.props.group.messages.count;
 			groupName = this.props.group.name;
 			groupStartDate = new Date(this.props.group.created_at);
-			console.log('this.props.group: ', this.props.group)
-			let selectedUsers = this.props.group.members.map((user) => {
-				return user.user_id;
-			});
-
-			console.log('selectedUsers: ', selectedUsers)
-			// this.setState({ selectedUsers: [...this.state.myArray, ...[1,2,3] ] })
-
-		}
-
-		if (this.state.messages.length) {
-			messages = this.state.messages;
-
-			series = new TimeSeries({
-				name: 'messages',
-				columns: ['time', 'value'],
-				utc: false,
-				points: messages.map((message, index) => {
-					return [moment.unix(message.created_at).valueOf(), index];
-				}),
-			});
-
-			const style = styler([{ key: 'value', color: 'steelblue', width: 2 }]);
-
-			chart = (
-				<Resizable>
-					<ChartContainer
-						title="Messages vs. time"
-						titleStyle={{ fill: '#555', fontWeight: 500 }}
-						timeRange={series.timerange()}
-						// format="%m %y"
-						// timeAxisTickCount={5}
-					>
-						<ChartRow height="300">
-							<YAxis
-								id="messages"
-								label="# messages"
-								min={0}
-								max={messages.length}
-								// min={series.min()}
-								// max={series.max()}
-								// width="60"
-								// format=".2f"
-							/>
-							<Charts>
-								<LineChart axis="messages" series={series} style={style} />
-							</Charts>
-						</ChartRow>
-					</ChartContainer>
-				</Resizable>
+			groupStartDateWrapper = (
+				<Moment unix date={groupStartDate} format="MMM D, YYYY LT" />
 			);
 		}
 
@@ -262,8 +281,6 @@ class Dashboard extends Component {
 
 		let datePicker = null;
 
-		// console.log('this.state.startDate: ', this.state.startDate)
-
 		if (this.state.selectedKey === 'custom') {
 			datePicker = (
 				<DateRangePicker
@@ -272,89 +289,85 @@ class Dashboard extends Component {
 					endDate={this.state.endDate} // momentPropTypes.momentObj or null,
 					endDateId="your_unique_end_date_id"
 					isOutsideRange={() => false}
-					// enableOutsideDays={true}
 					onDatesChange={this.onDatesChange}
 					focusedInput={this.state.focusedInput} // PropTypes.oneOf([START_DATE, END_DATE]) or null,
 					onFocusChange={this.onFocusChange} // PropTypes.func.isRequired,
-					// initialVisibleMonth={() => moment().add(2, 'M')} // PropTypes.func or null,
 				/>
 			);
 		}
 
-		// console.log('selectedOptionText: ', selectedOptionText)
-
 		return (
 			<Grid container spacing={3}>
-				<Grid item xs={4}>
-					<Box height={100} boxShadow={2} p={2}>
-						<Typography component={'div'}>
-							{groupName} start date:{' '}
-							<Moment unix date={groupStartDate} format="LLL" />
+				<Grid item xs={12} sm={12} md={4} lg={3}>
+					<Box height={120} boxShadow={2} p={2} align={'center'}>
+						<Typography component={'div'}>{groupName} start date: </Typography>
+						<Typography component={'div'} variant={'h6'}>
+							{groupStartDateWrapper}
 						</Typography>
 					</Box>
 				</Grid>
-				<Grid item xs={4}>
-					<Box height={100} boxShadow={2} p={2}>
-						<Typography component={'div'}>
-							Total Messages Sent: {numMessages}
+				<Grid item xs={12} sm={12} md={4} lg={3}>
+					<Box height={120} boxShadow={2} p={2} align={'center'}>
+						<Typography component={'div'}>Total Messages Sent:</Typography>
+						<Typography component={'div'} variant={'h6'}>
+							{numMessages}
 						</Typography>
 					</Box>
 				</Grid>
-				<Grid item xs={4}>
-					<Box height={100} boxShadow={2} p={2}>
-						<Typography component={'div'}>Avg Messages / Day:</Typography>
+				<Grid item xs={12} sm={12} md={4} lg={3}>
+					<Box height={120} boxShadow={2} p={2} align={'center'}>
+						<Typography component={'div'}>Messages Sent This Week</Typography>
+						<Typography component={'div'} variant={'h6'}>
+							{numMessages}
+						</Typography>
+						<Typography component={'div'}>Up/Down % from last week</Typography>
 					</Box>
 				</Grid>
-
-				<Grid item xs={12}>
-					<Box>
-						<List component="nav">
-							<ListItem
-								button
-								aria-haspopup="true"
-								aria-controls="lock-menu"
-								aria-label="When device is locked"
-								onClick={this.handleClickListItem}
+				<Grid container item xs={12} alignItems="center">
+					<Grid item xs={4} sm={3}>
+						<Box>
+							<List component="nav">
+								<ListItem
+									button
+									aria-haspopup="true"
+									aria-controls="lock-menu"
+									aria-label="When device is locked"
+									onClick={this.handleClickListItem}
+								>
+									<ListItemText
+										primary={selectedOption['text']}
+									/>
+								</ListItem>
+							</List>
+							<Menu
+								id="lock-menu"
+								anchorEl={anchorEl}
+								open={Boolean(anchorEl)}
+								onClose={this.handleClose}
 							>
-								<ListItemText
-									primary={selectedOption['text']}
-									// secondary={options[this.state.selectedKey]}
-								/>
-							</ListItem>
-						</List>
-						{/* <Button
-							aria-controls="customized-menu"
-							aria-haspopup="true"
-							variant="contained"
-							color="primary"
-							onClick={this.handleClickListItem}
-						>
-							{options[this.state.selectedKey]}
-						</Button> */}
-						<Menu
-							id="lock-menu"
-							anchorEl={anchorEl}
-							open={Boolean(anchorEl)}
-							onClose={this.handleClose}
-						>
-							{timeSelectOptions.map((option, index) => {
-								return (
-									<MenuItem
-										className={classes.menuItem}
-										key={option.key}
-										selected={option.key === this.state.selectedKey}
-										onClick={event =>
-											this.handleMenuItemClick(event, option.key)
-										}
-									>
-										{option.text}
-									</MenuItem>
-								);
-							})}
-						</Menu>
+								{timeSelectOptions.map((option, index) => {
+									return (
+										<MenuItem
+											className={classes.menuItem}
+											key={option.key}
+											selected={option.key === this.state.selectedKey}
+											onClick={event =>
+												this.handleMenuItemClick(event, option.key)
+											}
+										>
+											{option.text}
+										</MenuItem>
+									);
+								})}
+							</Menu>
+						</Box>
+					</Grid>
+					<Grid item xs={8} sm={6}>
 						{datePicker}
-					</Box>
-					<Box>{chart}</Box>
+					</Grid>
+				</Grid>
+				<Grid item xs={12} >
+					<Box>{this.state.chart}</Box>
 				</Grid>
 			</Grid>
 		);

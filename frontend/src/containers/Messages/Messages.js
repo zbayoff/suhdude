@@ -2,10 +2,12 @@ import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
 import moment from 'moment';
-// import Button from '@material-ui/core/Button';
-// import Card from '@material-ui/core/Card';
+import { SingleDatePicker } from 'react-dates';
+
 import Grid from '@material-ui/core/Grid';
 import Box from '@material-ui/core/Box';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import Dialog from '@material-ui/core/Dialog';
 import InputAdornment from '@material-ui/core/InputAdornment';
 import FormControl from '@material-ui/core/FormControl';
 import TextField from '@material-ui/core/TextField';
@@ -14,28 +16,58 @@ import List from '@material-ui/core/List';
 import MenuItem from '@material-ui/core/MenuItem';
 import FormHelperText from '@material-ui/core/FormHelperText';
 import Select from '@material-ui/core/Select';
-import { SingleDatePicker } from 'react-dates';
+import { withStyles } from '@material-ui/core/styles';
+import { Typography, CircularProgress } from '@material-ui/core';
 
 import Message from '../../components/Messages/Message/Message';
 
 import './Messages.scss';
-import { Typography } from '@material-ui/core';
+
 
 const WAIT_INTERVAL = 1000;
 const ENTER_KEY = 13;
 
+const styles = theme => {
+	return {
+		formField: {
+			width: '100%',
+			paddingLeft: '0',
+			paddingRight: '0',
+			marginTop: '10px',
+			marginBottom: '10px',
+
+			[theme.breakpoints.up('sm')]: {
+				width: 'auto',
+				paddingLeft: '10px',
+				paddingRight: '10px',
+			},
+			[theme.breakpoints.up('md')]: {
+				width: '100%',
+				paddingLeft: '0',
+				paddingRight: '0',
+				marginTop: '10px',
+				marginBottom: '10px',
+			},
+		},
+	};
+};
+
 class Messages extends Component {
 	state = {
 		messages: [],
+		detailMessages: [],
 		selectedUser: ['all'],
 		searchText: null,
 		selectedPopularity: 'none',
 		startDate: null,
 		endDate: moment(),
+		detailMessageID: null,
 		favorited: false,
 		sort: 'desc',
 		beforeDate: null,
 		skip: 0,
+		open: false,
+		loadingMessages: true,
 	};
 
 	timer = null;
@@ -64,11 +96,16 @@ class Messages extends Component {
 	componentDidUpdate(prevProps, prevState, snapshot) {
 		console.log('[Messages.js] - ComponentDidUpdate');
 
-		if (this.scrollAtBottom && this.state.favorited === false) {
-			this.scrollToBottom();
-		}
-		if (this.topMessage) {
-			ReactDOM.findDOMNode(this.topMessage).scrollIntoView();
+		// need to check if state has changed.
+		if (
+			JSON.stringify(prevState.messages) !== JSON.stringify(this.state.messages)
+		) {
+			if (this.scrollAtBottom && this.state.favorited === false) {
+				this.scrollToBottom();
+			}
+			if (this.topMessage) {
+				ReactDOM.findDOMNode(this.topMessage).scrollIntoView();
+			}
 		}
 	}
 
@@ -84,9 +121,11 @@ class Messages extends Component {
 
 		if (!this.scrollAtBottom) {
 			const numMessages = messageList.childNodes.length;
+
 			this.topMessage = numMessages === 0 ? null : messageList.childNodes[0];
 			return this.topMessage;
 		}
+
 		if (this.topMessage) {
 			ReactDOM.findDOMNode(this.topMessage).scrollIntoView();
 		}
@@ -95,7 +134,6 @@ class Messages extends Component {
 	}
 
 	updatedMessages() {
-		// console.log('updateAndAddMessages');
 		return axios
 			.get('http://localhost:8080/api/updateMessages/18834987?num=200')
 			.then(response => {
@@ -114,7 +152,6 @@ class Messages extends Component {
 	}
 
 	fetchMessages = () => {
-		console.log('fetchMessages');
 
 		let fromTS = this.state.startDate;
 		let toTS = this.state.endDate;
@@ -131,10 +168,7 @@ class Messages extends Component {
 			beforeTS = beforeTS.unix();
 		}
 
-		// console.log('beforeTS: ', beforeTS);
-
-		// console.log('fromTS', fromTS)
-		// console.log('toTS', toTS)
+		this.setState({ loadingMessages: true });
 
 		axios
 			.get('http://localhost:8080/api/messages', {
@@ -145,6 +179,7 @@ class Messages extends Component {
 					text: this.state.searchText,
 					favorited: this.state.favorited,
 					fromTS: fromTS,
+					detailMessage: false,
 					toTS: toTS,
 					beforeTS: beforeTS,
 					dashboard: false,
@@ -155,26 +190,23 @@ class Messages extends Component {
 				const messages = response.data;
 				let skip = this.state.skip;
 
-				// console.log('this.state.favorited: ', this.state.favorited);
+				this.setState({ loadingMessages: false });
 
 				// initially fetching messages?
 				if (this.state.messages.length && this.state.favorited !== true) {
-					// this.setState({ messages: [...this.state.messages, ...messages] });
 					if (messages.length) {
 						this.setState(prevState => ({
 							messages: [...messages, ...prevState.messages],
 							beforeDate: moment.unix(messages[0].created_at),
 						}));
-						// this.scrollToBottom();
 					}
 
 					// keep scroll position
 				} else if (this.state.favorited === true) {
-					// console.log('favorited true');
 					if (messages.length) {
 						this.setState(prevState => ({
 							messages: [...prevState.messages, ...messages],
-							skip: skip + this.messageLimit,
+							skip: skip + this.messageLimit, // for pagination
 						}));
 					}
 				} else {
@@ -185,25 +217,54 @@ class Messages extends Component {
 						});
 					}
 
-					// console.log('calling this.scrollBottom');
 					if (this.state.favorited === false) {
 						this.scrollToBottom();
 					}
 				}
+			})
+			.catch(err => console.log(err));
+	};
 
-				// console.log('this.state.messages', this.state.messages);
+	fetchDetailMessages = () => {
 
-				// this.setState({
-				// 	beforeDate: moment.unix(messages[0].created_at),
-				// });
+		let fromTS = this.state.startDate;
+		let toTS = this.state.endDate;
 
-				// console.log('this.state.startDate: ', this.state.startDate);
-				// console.log('this.state.endDate: ', this.state.endDate);
-				// console.log('messages[0] text', messages[0].text)
-				// console.log('messages[0]', messages[0].created_at)
+		if (fromTS && toTS) {
+			fromTS = fromTS.unix();
+			toTS = toTS.unix();
+		} else if (toTS) {
+			toTS = toTS.unix();
+		}
 
-				// console.log('messages[messages.length - 1] text', messages[messages.length - 1].text)
-				// console.log('messages[messages.length - 1]', messages[messages.length - 1].created_at)
+		axios
+			.get('http://localhost:8080/api/messages', {
+				params: {
+					limit: 60,
+					favorited: false,
+					fromTS: fromTS,
+					toTS: toTS,
+					detailMessageID: this.state.detailMessageID,
+					detailMessage: true,
+					dashboard: false,
+				},
+			})
+			.then(response => {
+				const detailMessages = response.data;
+
+				this.setState(
+					{
+						detailMessages,
+					},
+					() => {
+						const { detailMessageList } = this.refs;
+						if (detailMessageList) {
+							detailMessageList
+								.querySelector(`li[data-key="${this.state.detailMessageID}"]`)
+								.scrollIntoView();
+						}
+					}
+				);
 			})
 			.catch(err => console.log(err));
 	};
@@ -256,6 +317,7 @@ class Messages extends Component {
 	};
 
 	textSearchKeyDownHandler = event => {
+		this.setState({ loadingMessages: true });
 		if (event.keyCode === ENTER_KEY) {
 			clearTimeout(this.timer);
 			this.triggerChange();
@@ -305,6 +367,26 @@ class Messages extends Component {
 			case '1y':
 				startDate = moment().subtract(1, 'year');
 				endDate = moment();
+				favorited = true;
+				break;
+			case '2016':
+				startDate = moment.unix(1452100025);
+				endDate = moment('2016-12-31');
+				favorited = true;
+				break;
+			case '2017':
+				startDate = moment('2017-01-01');
+				endDate = moment('2017-12-31');
+				favorited = true;
+				break;
+			case '2018':
+				startDate = moment('2018-01-01');
+				endDate = moment('2018-12-31');
+				favorited = true;
+				break;
+			case '2019':
+				startDate = moment('2019-01-01');
+				endDate = moment('2019-12-31');
 				favorited = true;
 				break;
 			case 'all':
@@ -364,17 +446,6 @@ class Messages extends Component {
 	isMessageWithinNTime(firstMessageTime, secondMessageTime, time) {
 		let isMessageWithinNTime = false;
 
-		// if (this.state.sort === 'desc') {
-		// 	if (
-		// 		moment
-		// 			.unix(secondMessageTime)
-		// 			.isAfter(moment.unix(firstMessageTime).add(time, 'minutes'))
-		// 	) {
-		// 		isMessageWithinNTime = false;
-		// 	} else {
-		// 		isMessageWithinNTime = true;
-		// 	}
-		// } else {
 		if (
 			moment
 				.unix(firstMessageTime)
@@ -390,106 +461,153 @@ class Messages extends Component {
 	}
 
 	onDatesChange = date => {
-		console.log('date: ', date);
+		if (date) {
+			if (date.isValid()) {
+				this.setState(
+					{
+						endDate: date,
+						messages: [],
+						beforeDate: null,
+					},
+					() => {
+						// if (startDate && endDate) {
 
-		this.setState(
-			{
-				endDate: date,
-				messages: [],
-				beforeDate: null,
-			},
-			() => {
-				// if (startDate && endDate) {
-
-				this.fetchMessages();
-				this.scrollToBottom();
-				// }
+						this.fetchMessages();
+						this.scrollToBottom();
+						// }
+					}
+				);
 			}
-		);
-
-		// this.setState({ startDate, endDate }, () => {
-		// 	if (startDate && endDate) {
-		// 		this.fetchMessages();
-		// 	}
-		// });
+		}
 	};
 
-	messageClickHandler = (message) => {
-		console.log('message: ', message);
-	}
+	messageClickHandler = (message, data) => {
+		this.handleClickOpen();
+		const monthBeforeMessage = moment
+			.unix(message.created_at)
+			.subtract('1', 'day');
+		const monthAfterMessage = moment.unix(message.created_at).add('1', 'day');
+		// open modal dialog with newly fetch messages within 25 days before and after the clicked message
+		this.setState(
+			{
+				startDate: monthBeforeMessage,
+				endDate: monthAfterMessage,
+				detailMessageID: message.id,
+			},
+			() => {
+				this.fetchDetailMessages();
+			}
+		);
+	};
+
+	handleClose = () => {
+		this.setState({
+			open: false,
+			detailMessages: [],
+		});
+	};
+
+	handleClickOpen = () => {
+		this.setState({
+			open: true,
+		});
+	};
+
+	createMessagesArray = messagesArray => {
+		let messagesMap = null;
+		let attachments = null;
+		let messageTime = false;
+
+		messagesMap = messagesArray.map((message, index, msgsArray) => {
+			// build dynamic display based on attachments
+			if (message.attachments) {
+				attachments = message.attachments.map(attachment => {
+					let jsx = [];
+					if (attachment.type === 'image') {
+						jsx.push(
+							<Box maxWidth={300} key={message.id}>
+								<img
+									src={attachment.url}
+									className=""
+									width={'100%'}
+									alt="attachment"
+								/>
+							</Box>
+						);
+					}
+
+					return jsx;
+				});
+			}
+
+			if (index === 0) {
+				messageTime = true;
+			} else if (
+				this.isMessageWithinNTime(
+					message.created_at,
+					msgsArray[index - 1]['created_at'],
+					5
+				)
+			) {
+				messageTime = false;
+			} else {
+				messageTime = true;
+			}
+
+			// if first item in array, display current time.
+			// check next message, if sent after N minutes, display the message time.
+			return (
+				<Message
+					clickHandler={event => this.messageClickHandler(message)}
+					displayMessageTime={messageTime}
+					message={message}
+					attachments={attachments}
+					key={message.id}
+					group={this.props.group}
+				></Message>
+			);
+		});
+
+		return messagesMap;
+	};
 
 	render() {
 		console.log('[Messages.js] - render');
 
-		let messagesMap = null;
-		let attachments = null;
-		let usersSelect = null;
-		let messageTime = false;
+		const { classes } = this.props;
 
-		// console.log('this.state.favorited', this.state.favorited);
+		let messagesMap = null;
+		let detailMessagesMap = null;
+		let loadingMessages = null;
+		let usersSelect = null;
 
 		if (!this.state.error && this.state.messages) {
-			messagesMap = this.state.messages.map((message, index, messagesArray) => {
-				// build dynamic display based on attachments
-				if (message.attachments) {
-					attachments = message.attachments.map(attachment => {
-						let jsx = [];
-						// console.log('attachment.type: ', attachment.type);
-						if (attachment.type === 'image') {
-							jsx.push(
-								<Box maxWidth={300} key={message.id}>
-									<img
-										src={attachment.url}
-										className=""
-										width={'100%'}
-										alt="attachment"
-									/>
-								</Box>
-							);
-						}
 
-						// replace the "@name" with a link to the user's page.
-						// if (attachment.type === "mentions") {
-						// 	let attachment.user_ids.map((userid) => {
-						// 		return
-						// 	})
+			messagesMap = this.createMessagesArray(this.state.messages);
 
-						// }
-
-						return jsx;
-					});
+			if (this.state.messages.length) {
+				if (this.state.loadingMessages) {
+					loadingMessages = (
+						<Box display="flex" justifyContent="center" alignItems="center">
+							<CircularProgress />
+						</Box>
+					);
 				}
-
-				if (index === 0) {
-					messageTime = true;
-				} else if (
-					this.isMessageWithinNTime(
-						message.created_at,
-						messagesArray[index - 1]['created_at'],
-						5
-					)
-				) {
-					messageTime = false;
+			} else {
+				if (this.state.loadingMessages) {
+					loadingMessages = (
+						<Box display="flex" justifyContent="center" alignItems="center">
+							<CircularProgress />
+						</Box>
+					);
 				} else {
-					messageTime = true;
+					messagesMap = <Typography>No messages found.</Typography>;
 				}
+			}
+		}
 
-				// console.log('messageTime: ', messageTime)
-				// if first item in array, display current time.
-				// check next message, if sent after N minutes, display the message time.
-				return (
-					// <Grid item xs={12} key={message.id}>
-					<Message
-						clickHandler={() => this.messageClickHandler(message)}
-						displayMessageTime={messageTime}
-						message={message}
-						attachments={attachments}
-						key={message.id}
-						group={this.props.group}
-					></Message>
-					// </Grid>
-				);
-			});
+		if (!this.state.error && this.state.detailMessages) {
+			detailMessagesMap = this.createMessagesArray(this.state.detailMessages);
 		}
 
 		if (this.props.group) {
@@ -504,113 +622,120 @@ class Messages extends Component {
 			});
 
 			usersSelect = (
-				<FormControl>
+				<FormControl className={classes.formField}>
 					<Select
 						value={this.state.selectedUser}
 						onChange={this.handleUserChange}
-						// displayEmpty
-						// className={classes.selectEmpty}
 					>
 						<MenuItem value={'all'}>All Users</MenuItem>
 						{userOption}
 					</Select>
-					<FormHelperText>Users</FormHelperText>
+					<FormHelperText>Messages by user</FormHelperText>
 				</FormControl>
 			);
 		}
 
 		return (
-			<Grid container spacing={3}>
-				<Grid item xs={3}>
-					<Box
-						boxShadow={2}
-						// height={500}
-						// overflow="scroll"
-						p={2}
-						position={'relative'}
-					>
-						<Typography variant="h4">Filters</Typography>
-						<TextField
-							id="input-with-icon-textfield"
-							label="TextField"
-							onChange={this.textSearchChangeHandler}
-							onKeyDown={this.textSearchKeyDownHandler}
-							disabled={this.state.favorited ? true : false}
-							InputProps={{
-								startAdornment: (
-									<InputAdornment position="start">
-										<SearchIcon />
-									</InputAdornment>
-								),
-							}}
-						/>
-						{usersSelect}
-						<FormControl>
-							<Select
-								value={this.state.selectedPopularity}
-								onChange={this.popularityChangeHandler}
-								// displayEmpty
-								// className={classes.selectEmpty}
-							>
-								<MenuItem value={'none'}>None</MenuItem>
-								<MenuItem value={'1d'}>Today</MenuItem>
-								<MenuItem value={'1w'}>This Week</MenuItem>
-								<MenuItem value={'1m'}>This Month</MenuItem>
-								<MenuItem value={'1y'}>This Year</MenuItem>
-								<MenuItem value={'all'}>All Time</MenuItem>
-							</Select>
-							<FormHelperText>Popularity</FormHelperText>
-						</FormControl>
-						<SingleDatePicker
-							date={this.state.endDate} // momentPropTypes.momentObj or null
-							// onDateChange={date => this.setState({ date })} // PropTypes.func.isRequired
-							onDateChange={this.onDatesChange}
-							isOutsideRange={() => false}
-							focused={this.state.focused} // PropTypes.bool
-							placeholder={moment().format('MM/DD/YYYY')}
-							// monthFormat="MMMM YYYY"
-							// initialDate={Fri Feb 28 2020 22:47:04 GMT-0500}
-							onFocusChange={({ focused }) => this.setState({ focused })} // PropTypes.func.isRequired
-							id="your_unique_id" // PropTypes.string.isRequired,
-						/>
-						{/* <FormControl>
-							<Select
-								value={this.state.sort}
-								onChange={this.sortChangeHandler}
-								disabled={this.state.favorited ? true : false}
-								// displayEmpty
-								// className={classes.selectEmpty}
-							>
-								<MenuItem value={'asc'}>Oldest</MenuItem>
-								<MenuItem value={'desc'}>Newest</MenuItem>
-							</Select>
-							<FormHelperText>Sort</FormHelperText>
-						</FormControl> */}
-					</Box>
-				</Grid>
-				<Grid item xs={9}>
-					<Box
-						boxShadow={2}
-						overflow="scroll"
-						p={2}
-						position={'relative'}
-						style={{ overflowY: 'scroll' }}
-					>
-						<Typography variant="h4">Messages</Typography>
-						{/* <button onClick={this.fetchMessages}>Fetch earlier Messages</button> */}
-						<List
-							ref="messageList"
-							onScroll={this.onScroll}
-							style={{ overflowY: 'scroll', height: '500px' }}
+			<>
+				<Grid container spacing={3}>
+					<Grid item xs={12} md={4}>
+						<Box
+							boxShadow={2}
+							p={2}
+							position={'relative'}
 						>
-							{messagesMap}
-						</List>
-						{/* <button onClick={this.fetchMessages}>Fetch earlier Messages</button> */}
-					</Box>
+							<Box pb={1}>
+								<Typography variant="h6">Filters</Typography>
+							</Box>
+							<TextField
+								className={classes.formField}
+								id="input-with-icon-textfield"
+								// label="Search message content"
+								helperText="Search message content"
+								onChange={this.textSearchChangeHandler}
+								onKeyDown={this.textSearchKeyDownHandler}
+								disabled={this.state.favorited ? true : false}
+								InputProps={{
+									startAdornment: (
+										<InputAdornment position="start">
+											<SearchIcon />
+										</InputAdornment>
+									),
+								}}
+							/>
+							{usersSelect}
+							<FormControl className={classes.formField}>
+								<Select
+									value={this.state.selectedPopularity}
+									onChange={this.popularityChangeHandler}
+									// displayEmpty
+									// className={classes.selectEmpty}
+								>
+									<MenuItem value={'none'}>None</MenuItem>
+									<MenuItem value={'1d'}>Today</MenuItem>
+									<MenuItem value={'1w'}>This Week</MenuItem>
+									<MenuItem value={'1m'}>This Month</MenuItem>
+									<MenuItem value={'1y'}>This Year</MenuItem>
+									<MenuItem value={'2019'}>2019</MenuItem>
+									<MenuItem value={'2018'}>2018</MenuItem>
+									<MenuItem value={'2017'}>2017</MenuItem>
+									<MenuItem value={'2016'}>2016</MenuItem>
+									<MenuItem value={'all'}>All Time</MenuItem>
+								</Select>
+								<FormHelperText>Messages by popularity</FormHelperText>
+							</FormControl>
+							<FormControl className={classes.formField}>
+								<SingleDatePicker
+									date={this.state.endDate}
+									onDateChange={this.onDatesChange}
+									isOutsideRange={() => false}
+									focused={this.state.focused} // PropTypes.bool
+									placeholder={moment().format('MM/DD/YYYY')}
+									onFocusChange={({ focused }) => this.setState({ focused })} // PropTypes.func.isRequired
+									id="your_unique_id" // PropTypes.string.isRequired,
+								/>
+								<FormHelperText>Messages by date</FormHelperText>
+							</FormControl>
+						</Box>
+					</Grid>
+					<Grid item xs={12} md={8}>
+						<Box
+							boxShadow={2}
+							overflow="scroll"
+							p={2}
+							position={'relative'}
+							style={{ overflowY: 'scroll' }}
+						>
+							<Box pb={1}>
+								<Typography variant="h6">Messages</Typography>
+							</Box>
+							<List
+								ref="messageList"
+								onScroll={this.onScroll}
+								style={{ overflowY: 'scroll', height: '500px' }}
+							>
+								{loadingMessages}
+								{messagesMap}
+							</List>
+						</Box>
+					</Grid>
 				</Grid>
-			</Grid>
+				<Dialog
+					onClose={this.handleClose}
+					aria-labelledby="simple-dialog-title"
+					open={this.state.open}
+				>
+					<DialogTitle id="simple-dialog-title">Messages Detail</DialogTitle>
+					<List
+						ref="detailMessageList"
+						style={{ overflowY: 'scroll', height: '500px' }}
+					>
+						{detailMessagesMap}
+					</List>
+				</Dialog>
+			</>
 		);
 	}
 }
 
-export default Messages;
+export default withStyles(styles, { withTheme: true })(Messages);

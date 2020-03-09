@@ -1,0 +1,17 @@
+.table-container {
+    overflow-x: 'auto';
+
+    table:first-child {
+      tr {
+        td:first-child, th:first-child {
+        //   background-color: '#f5f5f5';
+          position: 'sticky';
+          left: 0;
+          z-index: 999;
+        }
+        th:first-child {
+          z-index: 9999;
+        }
+      }
+    }
+  }

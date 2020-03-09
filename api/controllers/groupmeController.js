@@ -31,6 +31,30 @@ function getMessages(
 		});
 }
 
+function getGroupMeMessages(req, res) {
+	const {
+		before_id = '',
+		since_id = '',
+		after_id = '',
+		limit = 20,
+	} = req.query;
+	const { group_id } = req.params;
+
+	const options = {
+		uri: `${config.url}/groups/${group_id}/messages?before_id=${before_id}&since_id=${since_id}&after_id=${after_id}&limit=${limit}&token=${config.TOKEN}`,
+		json: true,
+	};
+
+	request
+		.get(options)
+		.then(data => {
+			res.send(data.response.messages);
+		})
+		.catch(err => {
+			res.send(err);
+		});
+}
+
 function getGroup(groupID) {
 	const options = {
 		uri: `${config.url}/groups/${groupID}?token=${config.TOKEN}`,
@@ -175,4 +199,5 @@ module.exports = {
 	lastMsgID,
 	totalMessageCountHandler,
 	getGroups,
+	getGroupMeMessages,
 };

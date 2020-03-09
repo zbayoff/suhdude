@@ -29,14 +29,11 @@ class Message extends Component {
 	};
 
 	getUserInfo = userId => {
-		// console.log(this.props.group)
 		const users = this.props.group.members;
 
 		const userInfo = users.find(user => {
 			return user.user_id === userId;
 		});
-
-		// console.log('userInfo: ', userInfo)
 
 		return userInfo;
 	};
@@ -55,17 +52,11 @@ class Message extends Component {
 		}
 	};
 
-	messageClickHandler = (data) => {
-		this.props.messageClickHandler()
-	}
+	messageClickHandler = data => {
+		this.props.messageClickHandler(data);
+	};
 
 	render() {
-		// console.log('[Message.js] render');
-
-		// console.log('[Message.js] this.props.message: ', this.props.message);
-
-		console.log('this.props.clickHandler: ', this.props.clickHandler);
-
 		let likedMessageIcon = <FavoriteBorderIcon />;
 		let favoritedUsers = '';
 
@@ -97,14 +88,14 @@ class Message extends Component {
 		) {
 			avatar = (
 				<ListItemAvatar>
-					<Avatar alt="Travis Howard" src="" />
+					<Avatar alt="System" src="" />
 				</ListItemAvatar>
 			);
 		} else {
 			avatar = (
 				<ListItemAvatar>
 					<Avatar
-						alt="Travis Howard"
+						alt={this.props.message.name}
 						src={this.getUserInfo(this.props.message.user_id)['image_url']}
 					/>
 				</ListItemAvatar>
@@ -115,8 +106,6 @@ class Message extends Component {
 
 		if (this.props.displayMessageTime) {
 			let format = '';
-
-			// console.log('moment().unix(): ', moment.unix().format('ddd, hh:ss'))
 
 			// first check if same year
 
@@ -155,6 +144,7 @@ class Message extends Component {
 		return (
 			<ListItem
 				key={this.props.message.id}
+				data-key={this.props.message.id}
 				alignItems="flex-start"
 				style={{ paddingTop: '12px', paddingBottom: '12px', cursor: 'pointer' }}
 				onClick={this.props.clickHandler}
@@ -188,29 +178,5 @@ class Message extends Component {
 		);
 	}
 }
-
-// const Message = props => {
-// 	// console.log(props.attachments)
-
-// let likedMessageIcon = <FavoriteBorderIcon />;
-// if (props.message.favorited_by.length) {
-// 	likedMessageIcon = (
-// 		<Badge badgeContent={props.message.favorited_by.length} color="primary">
-// 			<FavoriteIcon />
-// 		</Badge>
-// 	);
-// }
-
-// 	const hoverFavoritedMessageHandler = (event) => {
-// 		console.log(event.target)
-// 		const favoritedBy = props.message.favorited_by
-// 			.map(user => {
-// 				return user;
-// 			})
-// 			.join('\n');
-// 		console.log('favoritedBy: ', favoritedBy);
-// 	};
-
-// };
 
 export default Message;

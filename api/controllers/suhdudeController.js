@@ -237,7 +237,9 @@ function getMessages(req, res) {
 		sort,
 		favorited,
 		count,
+		detailMessageID,
 		skip,
+		detailMessage,
 		dashboard,
 	} = req.query;
 
@@ -297,29 +299,6 @@ function getMessages(req, res) {
 			newSort = { created_at: -1 };
 		}
 	}
-
-	// if (favorited) {
-	// 	query.favorited_by = { $exists: true, $ne: [] };
-	// }
-
-	console.log('fromTS: ', fromTS);
-
-	// if (count) {
-	// 	Message.countDocuments(query)
-	// 		.limit(newLimit)
-	// 		.sort(newSort)
-	// 		.then(data => {
-	// 			// console.log();
-	// 			res.send(String(data));
-	// 		})
-	// 		.catch(err => {
-	// 			console.log('err:', err);
-	// 			res.send(err);
-	// 		});
-	// } else
-
-	console.log('dashboard: ', dashboard);
-	console.log('favorited: ', favorited);
 
 	if (favorited !== 'false') {
 		match.created_at = {
@@ -386,9 +365,71 @@ function getMessages(req, res) {
 				console.log('err:', err);
 				res.send(err);
 			});
+	} else if (detailMessage !== 'false') {
+		const detailMessages = [];
+
+		const beforeIDAgg = [
+			{
+				$match: {
+					id: { $lte: detailMessageID },
+				},
+			},
+			{
+				$sort: {
+					created_at: -1,
+				},
+			},
+			{
+				$limit: newLimit,
+			},
+			{
+				$sort: {
+					created_at: 1,
+				},
+			},
+		];
+
+		const afterIDAgg = [
+			{
+				$match: {
+					id: { $gt: detailMessageID },
+				},
+			},
+			{
+				$sort: {
+					created_at: 1,
+				},
+			},
+			{
+				$limit: newLimit,
+			},
+			{
+				$sort: {
+					created_at: 1,
+				},
+			},
+		];
+
+		Message.aggregate(beforeIDAgg)
+			.then(data => {
+				detailMessages.push(...data);
+
+				Message.aggregate(afterIDAgg)
+					.then(moreData => {
+						detailMessages.push(...moreData);
+
+						res.send(detailMessages);
+					})
+					.catch(err => {
+						console.log('err:', err);
+						res.send(err);
+					});
+			})
+			.catch(err => {
+				console.log('err:', err);
+				res.send(err);
+			});
 	} else {
-		console.log('beforeTS: ', beforeTS);
-		console.log('toTS: ', toTS);
 		if (beforeTS) {
 			match.created_at = {
 				$lt: Number(beforeTS),
@@ -433,7 +474,202 @@ function getMessages(req, res) {
 	}
 }
 
-function getUserStats(req, res) {}
+function getUsers(req, res) {
+	// get all users
+	groupmeController.getGroup(18834987).then(group => {
+		const users = group.members;
+
+		const userPromises = users.map(user => {
+			const agg = [
+				{
+					$match: {
+						user_id: user.user_id,
+					},
+				},
+				{
+					$group: {
+						_id: null,
+						distinctNicknames: {
+							$addToSet: '$name',
+						},
+					},
+				},
+			];
+
+			return Message.aggregate(agg)
+				.then(data => {
+					return {
+						...user,
+						distinctNicknames: data[0].distinctNicknames,
+					};
+				})
+				.catch(err => {
+					return err;
+				});
+		});
+
+		Promise.all(userPromises)
+			.then(results => {
+				console.log('results: ', results);
+				res.send(results);
+			})
+			.catch(err => console.log(err));
+
+		// console.log('userStats: ', userStats);
+	});
+}
+
+function getUserStats(req, res) {
+	// get all users
+	groupmeController.getGroup(18834987).then(group => {
+		const users = group.members;
+
+		const userPromises = users.map(user => {
+			const agg = [
+				{
+					$facet: {
+						numMessages: [
+							{
+								$match: {
+									user_id: user.user_id,
+								},
+							},
+							{
+								$count: 'numMessages',
+							},
+						],
+						numLikes: [
+							{
+								$match: {
+									user_id: user.user_id,
+								},
+							},
+							{
+								$group: {
+									_id: null,
+									numLikes: {
+										$sum: {
+											$size: '$favorited_by',
+										},
+									},
+								},
+							},
+						],
+						numLikedMsgs: [
+							{
+								$match: {
+									favorited_by: {
+										$in: [user.user_id],
+									},
+								},
+							},
+							{
+								$count: 'numLikedMsgs',
+							},
+						],
+						numSelfLikes: [
+							{ $match: { user_id: user.user_id } },
+							{
+								$group: {
+									_id: null,
+									numSelfLikes: {
+										$sum: {
+											$cond: [{ $in: [user.user_id, '$favorited_by'] }, 1, 0],
+										},
+									},
+								},
+							},
+						],
+						distinctNicknames: [
+							{
+								$match: {
+									user_id: user.user_id,
+								},
+							},
+							{
+								$group: {
+									_id: null,
+									distinctNicknames: {
+										$addToSet: '$name',
+									},
+								},
+							},
+						],
+						avgLikesPerMessage: [
+							{ $match: { user_id: user.user_id } },
+							{ $match: { favorited_by: { $ne: [] } } },
+							{
+								$project: {
+									numLikes: {
+										$sum: { $size: '$favorited_by' },
+									},
+								},
+							},
+							{
+								$group: {
+									_id: null,
+									avgLikesPerMessage: { $avg: { $sum: '$numLikes' } },
+								},
+							},
+						],
+					},
+				},
+			];
+
+			return Message.aggregate(agg)
+				.then(data => {
+					// console.log('data: ', data);
+
+					return {
+						...user,
+						numMessages: data[0].numMessages[0].numMessages,
+						numLikesReceived: data[0].numLikes[0].numLikes,
+						numLikedMsgs: data[0].numLikedMsgs[0].numLikedMsgs,
+						numSelfLikes: data[0].numSelfLikes[0].numSelfLikes,
+						likesToMsgs: Number(
+							(
+								data[0].numLikes[0].numLikes /
+								data[0].numMessages[0].numMessages
+							).toFixed(2)
+						),
+						distinctNicknames: data[0].distinctNicknames[0].distinctNicknames,
+						numdistinctNicknames:
+							data[0].distinctNicknames[0].distinctNicknames.length,
+						avgLikesPerMessage: Number(
+							data[0].avgLikesPerMessage[0].avgLikesPerMessage.toFixed(2)
+						),
+						// numLikes: data[0].numLikes[0].numLikes,
+					};
+				})
+				.catch(err => {
+					return err;
+				});
+
+			// return Message.find({ user_id: user.user_id })
+			// 	.count()
+			// 	.then(data => {
+			// 		console.log('data: ', data);
+			// 		return { ...user, numMessages: data };
+			// 	})
+			// 	.catch(err => {
+			// 		return err;
+			// 	});
+		});
+
+		Promise.all(userPromises)
+			.then(results => {
+				res.send(results);
+				// console.log('results: ', results);
+			})
+			.catch(err => console.log(err));
+
+		// console.log('userStats: ', userStats);
+	});
+
+	// for each user, get a list of stats
+}
+
+// getUserStats();
 
 module.exports = {
 	getLastMsgID,
@@ -441,4 +677,6 @@ module.exports = {
 	addMessages,
 	updateMessages,
 	deleteMessages,
+	getUsers,
+	getUserStats,
 };

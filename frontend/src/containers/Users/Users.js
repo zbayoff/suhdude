@@ -1,53 +1,98 @@
 import React, { Component } from 'react';
 import axios from 'axios';
-// import Button from '@material-ui/core/Button';
-import Card from '@material-ui/core/Card';
-import CardMedia from '@material-ui/core/CardMedia';
+
+import Box from '@material-ui/core/Box';
+import Container from '@material-ui/core/Container';
+import Dialog from '@material-ui/core/Dialog';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import DialogContent from '@material-ui/core/DialogContent';
 import Grid from '@material-ui/core/Grid';
+import { Typography } from '@material-ui/core';
+
+import User from '../../components/User/User';
 
 class Users extends Component {
 	state = {
 		users: [],
+		open: false,
+		selectedUser: null,
 	};
 
 	componentDidMount() {
-		console.log('[User.js] - ComponentDidMount');
+		console.log('[Users.js] - ComponentDidMount');
 		axios
-			.get('http://localhost:8080/groupmeApi/group/18834987')
+			.get('http://localhost:8080/api/users')
 			.then(response => {
-				const users = response.data.members;
-				this.setState({ users });
+				const users = response.data;
+				this.setState({ users: [...users] });
 			})
 			.catch(err => console.log(err));
 	}
+
+	handleClickOpen = () => {
+		this.setState({
+			open: true,
+		});
+	};
+
+	handleClose = () => {
+		this.setState({ open: false });
+	};
+
+	userClickHandler = user => {
+		this.handleClickOpen();
+		this.setState({ selectedUser: user });
+	};
+
 	render() {
-		let users = <p style={{ textAlign: 'center' }}>Something went wrong!</p>;
-		if (!this.state.error) {
-			users = this.state.users;
+
+		let userMap = null;
+		let selectedUser = null;
+
+		if (this.state.selectedUser) {
+			const nicknames = this.state.selectedUser.distinctNicknames.map(
+				(nickname, index) => {
+					return <span key={index}>{nickname} * </span>;
+				}
+			);
+			selectedUser = <Box>{nicknames}</Box>;
 		}
 
-		const userMap = users.map(user => {
-			return (
-				<Grid item xs={3} key={user.user_id}>
-					<Card>
-						<CardMedia
-							component="img"
-							alt=""
-							height="140"
-							image={user.image_url}
-							title=""
-						/>
-						<p>{user.nickname}</p>
-						<p>({user.name})</p>
-					</Card>
-				</Grid>
-			);
-		});
+		if (this.state.users) {
+			let users = this.state.users;
+			userMap = users.map(user => {
+				return (
+					<User
+						user={user}
+						key={user.user_id}
+						clickHandler={() => this.userClickHandler(user)}
+					></User>
+				);
+			});
+		}
+
 		console.log('[User.js] - render');
 		return (
-			<Grid container spacing={3}>
-				{userMap}
-			</Grid>
+			<>
+				<Box pb={2}>
+				<Typography variant="h6" align="center">
+					Users
+				</Typography>
+					</Box>
+				<Container>
+					<Grid container spacing={3}>
+						{userMap}
+					</Grid>
+				</Container>
+				<Dialog
+					open={this.state.open}
+					onClose={this.handleClose}
+					aria-labelledby="simple-dialog-title"
+				>
+					<DialogTitle id="simple-dialog-title">Known Aliases: </DialogTitle>
+					<DialogContent dividers>{selectedUser}</DialogContent>
+				</Dialog>
+			</>
 		);
 	}
 }

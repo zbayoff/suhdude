@@ -28,7 +28,7 @@ router.get('/groups', function(req, res) {
 });
 
 router.get('/uploadAllMessages/:group_id', groupmeController.uploadAllMessages);
-router.get('/messages/:group_id', groupmeController.getMessages);
+router.get('/messages/:group_id', groupmeController.getGroupMeMessages);
 
 // router.get('/updateMessages/:group_id', function(req, res) {
 // 	const groupID = req.params.group_id;
