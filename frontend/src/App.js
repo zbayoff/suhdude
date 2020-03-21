@@ -83,7 +83,7 @@ class App extends Component {
 	componentDidMount() {
 		console.log('[App.js] - ComponentDidMount');
 		axios
-			.get(`${process.env.REACT_APP_API_URL}/groupmeApi/group/18834987`)
+			.get(`/groupmeApi/group/18834987`)
 			.then(response => {
 				this.setState({ group: response.data });
 			})
