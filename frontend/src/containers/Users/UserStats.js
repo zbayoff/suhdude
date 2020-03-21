@@ -81,7 +81,7 @@ const rows = [
 		numeric: true,
 		disablePadding: false,
 		label: '# Total Likes/Msgs',
-		tooltip: 'Ratio of total # of all likes to total number of messages',
+		tooltip: 'Ratio of total # of likes received to total # of messages',
 	},
 	{
 		id: 'avgLikesPerMessage',
@@ -192,7 +192,7 @@ class UserStats extends React.Component {
 		this.setState({ emptyRows });
 
 		axios
-			.get('http://localhost:8080/api/userStats')
+			.get('/api/userStats')
 			.then(response => {
 				const userStats = response.data;
 				this.setState({

@@ -29,6 +29,8 @@ import moment from 'moment';
 
 import { withStyles } from '@material-ui/core/styles';
 
+import { getMessages } from '../../utils/apiHelper';
+
 import './Dashboard.scss';
 
 const timeSelectOptions = [
@@ -48,7 +50,11 @@ const styles = theme => {
 				},
 			},
 		},
-		
+		timeSelect: {
+			backgroundColor: theme.palette.primary.main,
+			color: theme.palette.common.white,
+		},
+
 		primary: {},
 		icon: {},
 	};
@@ -66,52 +72,24 @@ class Dashboard extends Component {
 		datePickerOpen: false,
 		focusedInput: 'startDate',
 		selectedUsers: [],
-		chart: null,
+		chart: <CircularProgress />,
+		numMsgsPercentChange: null,
+		numMessagesSentThisWeek: null,
 	};
 
 	componentDidMount() {
 		console.log('[Dashboard.js] - ComponentDidMount');
-		this.updatedMessages()
-			.then(() => {
-				console.log('updateMessages successfully');
-				this.addMessages()
-					.then(() => {
-						console.log('addedMessages successfully');
-						this.fetchMessages();
-					})
-					.catch(err => {
-						console.log(err);
-					});
-			})
-			.catch(err => {
-				console.log(err);
-			});
+
+		this.fetchMessages();
 	}
 
-	updatedMessages() {
-		return axios
-			.get('http://localhost:8080/api/updateMessages/18834987?num=200')
-			.then(response => {
-				console.log('updateMessages response: ', response);
-			})
-			.catch(err => console.log(err));
-	}
-
-	addMessages() {
-		return axios
-			.get('http://localhost:8080/api/addMessages/18834987')
-			.then(response => {
-				console.log('addMessages repspone: ', response);
-			})
-			.catch(err => console.log(err));
-	}
 
 	fetchMessages() {
 		const fromTS = this.state.startDate.unix();
 		const toTS = this.state.endDate.unix();
 
 		axios
-			.get(`http://localhost:8080/api/messages`, {
+			.get(`/api/messages`, {
 				params: {
 					sort: 'asc',
 					fromTS: fromTS,
@@ -123,12 +101,19 @@ class Dashboard extends Component {
 				},
 			})
 			.then(response => {
+				console.log('fetch messages successfully')
 				const messages = response.data;
 				this.setState({ messages: [] });
-				this.setState({
-					messages: [...this.state.messages, ...messages],
-				});
-				this.createChart();
+				this.setState(
+					{
+						messages: [...this.state.messages, ...messages],
+						chart: <CircularProgress />
+					},
+					() => {
+						this.calcNumMessages();
+						this.createChart();
+					}
+				);
 			})
 			.catch(err => console.log(err));
 	}
@@ -181,8 +166,6 @@ class Dashboard extends Component {
 				),
 			});
 		}
-
-		
 	}
 
 	startDateChangeHandler = date => {
@@ -234,6 +217,7 @@ class Dashboard extends Component {
 		this.setState({
 			selectedKey: key,
 			anchorEl: null,
+			chart: <CircularProgress />
 		});
 	};
 
@@ -241,8 +225,54 @@ class Dashboard extends Component {
 		this.setState({ anchorEl: null });
 	};
 
+	calcNumMessages() {
+		// get # of messages from current day to the last monday. Compare this to
+
+		let now = moment().unix();
+
+		let startOfWeek = moment()
+			.startOf('isoWeek')
+			.unix();
+
+		let oneWeekBeforeStartOfWeek = moment
+			.unix(startOfWeek)
+			.subtract('1', 'week')
+			.unix();
+
+		let nowMinusOneWeek = moment
+			.unix(now)
+			.subtract('1', 'week')
+			.unix();
+
+		getMessages(startOfWeek, now, true)
+			.then(response => {
+
+				const numMessagesSentThisWeek = response.data;
+
+				getMessages(oneWeekBeforeStartOfWeek, nowMinusOneWeek, true)
+					.then(response => {
+
+						const numMessagesSentLastWeek = response.data;
+
+						const numMsgsPercentChange = Math.floor(
+							((numMessagesSentThisWeek.length -
+								numMessagesSentLastWeek.length) /
+								numMessagesSentLastWeek.length) *
+								100
+						);
+
+						this.setState({
+							numMsgsPercentChange,
+							numMessagesSentThisWeek: numMessagesSentThisWeek.length,
+						});
+					})
+					.catch(err => console.log(err));
+			})
+			.catch(err => console.log(err));
+	}
+
 	onDatesChange = ({ startDate, endDate }) => {
-		this.setState({ startDate, endDate }, () => {
+		this.setState({ startDate, endDate, chart: <CircularProgress /> }, () => {
 			if (startDate && endDate) {
 				if (startDate.isValid() && endDate.isValid()) {
 					this.fetchMessages();
@@ -259,9 +289,39 @@ class Dashboard extends Component {
 		console.log('[Dashboard.js] - render()');
 
 		let numMessages = <CircularProgress />;
+		let numMessagesSentThisWeek = <CircularProgress />;
 		let groupName = '';
 		let groupStartDate = '';
 		let groupStartDateWrapper = <CircularProgress />;
+
+		let numMsgsPercentChange = null;
+		if (this.state.numMsgsPercentChange) {
+			if (Math.sign(this.state.numMsgsPercentChange) === -1) {
+				numMsgsPercentChange = (
+					<Typography style={{ color: 'red' }}>
+						{this.state.numMsgsPercentChange}% down from last week
+					</Typography>
+				);
+			} else if (Math.sign(this.state.numMsgsPercentChange) === 0) {
+				numMsgsPercentChange = (
+					<Typography>{this.state.numMsgsPercentChange}% change from last week</Typography>
+				);
+			} else {
+				numMsgsPercentChange = (
+					<Typography style={{ color: 'green' }}>
+						{this.state.numMsgsPercentChange}% up from last week
+					</Typography>
+				);
+			}
+		}
+
+		if (this.state.numMessagesSentThisWeek) {
+			numMessagesSentThisWeek = (
+				<Typography variant={'h6'}>
+					{this.state.numMessagesSentThisWeek}
+				</Typography>
+			);
+		}
 
 		const { anchorEl } = this.state;
 		const { classes } = this.props;
@@ -299,44 +359,33 @@ class Dashboard extends Component {
 		return (
 			<Grid container spacing={3}>
 				<Grid item xs={12} sm={12} md={4} lg={3}>
-					<Box height={120} boxShadow={2} p={2} align={'center'}>
-						<Typography component={'div'}>{groupName} start date: </Typography>
-						<Typography component={'div'} variant={'h6'}>
-							{groupStartDateWrapper}
-						</Typography>
+					<Box height={150} boxShadow={2} p={2} align={'center'}>
+						<Typography>{groupName} start date: </Typography>
+						<Typography variant={'h6'}>{groupStartDateWrapper}</Typography>
 					</Box>
 				</Grid>
 				<Grid item xs={12} sm={12} md={4} lg={3}>
-					<Box height={120} boxShadow={2} p={2} align={'center'}>
-						<Typography component={'div'}>Total Messages Sent:</Typography>
-						<Typography component={'div'} variant={'h6'}>
-							{numMessages}
-						</Typography>
+					<Box height={150} boxShadow={2} p={2} align={'center'}>
+						<Typography>Total Messages Sent:</Typography>
+						<Typography variant={'h6'}>{numMessages}</Typography>
 					</Box>
 				</Grid>
 				<Grid item xs={12} sm={12} md={4} lg={3}>
-					<Box height={120} boxShadow={2} p={2} align={'center'}>
-						<Typography component={'div'}>Messages Sent This Week</Typography>
-						<Typography component={'div'} variant={'h6'}>
-							{numMessages}
-						</Typography>
-						<Typography component={'div'}>Up/Down % from last week</Typography>
+					<Box height={150} boxShadow={2} p={2} align={'center'}>
+						<Typography>Messages Sent This Week</Typography>
+						{numMessagesSentThisWeek}
+						{numMsgsPercentChange}
 					</Box>
 				</Grid>
 				<Grid container item xs={12} alignItems="center">
 					<Grid item xs={4} sm={3}>
 						<Box>
-							<List component="nav">
+							<List>
 								<ListItem
 									button
-									aria-haspopup="true"
-									aria-controls="lock-menu"
-									aria-label="When device is locked"
 									onClick={this.handleClickListItem}
 								>
-									<ListItemText
-										primary={selectedOption['text']}
-									/>
+									<ListItemText primary={selectedOption['text']} />
 								</ListItem>
 							</List>
 							<Menu
@@ -366,8 +415,8 @@ class Dashboard extends Component {
 						{datePicker}
 					</Grid>
 				</Grid>
-				<Grid item xs={12} >
-					<Box>{this.state.chart}</Box>
+				<Grid item xs={12}>
+					<Box textAlign="center">{this.state.chart}</Box>
 				</Grid>
 			</Grid>
 		);

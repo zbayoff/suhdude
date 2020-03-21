@@ -23,7 +23,6 @@ import Message from '../../components/Messages/Message/Message';
 
 import './Messages.scss';
 
-
 const WAIT_INTERVAL = 1000;
 const ENTER_KEY = 13;
 
@@ -76,21 +75,8 @@ class Messages extends Component {
 
 	componentDidMount() {
 		console.log('[Messages.js] - ComponentDidMount');
-		this.updatedMessages()
-			.then(() => {
-				console.log('updateMessages successfully');
-				this.addMessages()
-					.then(() => {
-						console.log('addedMessages successfully');
-						this.fetchMessages();
-					})
-					.catch(err => {
-						console.log(err);
-					});
-			})
-			.catch(err => {
-				console.log(err);
-			});
+		this.fetchMessages();
+		
 	}
 
 	componentDidUpdate(prevProps, prevState, snapshot) {
@@ -103,7 +89,7 @@ class Messages extends Component {
 			if (this.scrollAtBottom && this.state.favorited === false) {
 				this.scrollToBottom();
 			}
-			if (this.topMessage) {
+			if (this.topMessage && this.state.favorited === false) {
 				ReactDOM.findDOMNode(this.topMessage).scrollIntoView();
 			}
 		}
@@ -126,36 +112,21 @@ class Messages extends Component {
 			return this.topMessage;
 		}
 
-		if (this.topMessage) {
+
+
+		if (this.topMessage && this.state.favorited === false) {
 			ReactDOM.findDOMNode(this.topMessage).scrollIntoView();
 		}
 
 		return null;
 	}
 
-	updatedMessages() {
-		return axios
-			.get('http://localhost:8080/api/updateMessages/18834987?num=200')
-			.then(response => {
-				console.log('updateMessages response: ', response);
-			})
-			.catch(err => console.log(err));
-	}
-
-	addMessages() {
-		return axios
-			.get('http://localhost:8080/api/addMessages/18834987')
-			.then(response => {
-				console.log('addMessages repspone: ', response);
-			})
-			.catch(err => console.log(err));
-	}
 
 	fetchMessages = () => {
-
 		let fromTS = this.state.startDate;
 		let toTS = this.state.endDate;
 		let beforeTS = this.state.beforeDate;
+		let skip = this.state.skip;
 
 		if (fromTS && toTS) {
 			fromTS = fromTS.unix();
@@ -171,7 +142,7 @@ class Messages extends Component {
 		this.setState({ loadingMessages: true });
 
 		axios
-			.get('http://localhost:8080/api/messages', {
+			.get('/api/messages', {
 				params: {
 					sort: this.state.sort,
 					limit: this.messageLimit,
@@ -183,15 +154,11 @@ class Messages extends Component {
 					toTS: toTS,
 					beforeTS: beforeTS,
 					dashboard: false,
-					skip: this.state.skip,
+					skip: skip,
 				},
 			})
 			.then(response => {
 				const messages = response.data;
-				let skip = this.state.skip;
-
-				this.setState({ loadingMessages: false });
-
 				// initially fetching messages?
 				if (this.state.messages.length && this.state.favorited !== true) {
 					if (messages.length) {
@@ -204,9 +171,10 @@ class Messages extends Component {
 					// keep scroll position
 				} else if (this.state.favorited === true) {
 					if (messages.length) {
+						skip += this.messageLimit;
 						this.setState(prevState => ({
 							messages: [...prevState.messages, ...messages],
-							skip: skip + this.messageLimit, // for pagination
+							skip
 						}));
 					}
 				} else {
@@ -221,12 +189,14 @@ class Messages extends Component {
 						this.scrollToBottom();
 					}
 				}
+
+				this.setState({ loadingMessages: false });
+
 			})
 			.catch(err => console.log(err));
 	};
 
 	fetchDetailMessages = () => {
-
 		let fromTS = this.state.startDate;
 		let toTS = this.state.endDate;
 
@@ -238,7 +208,7 @@ class Messages extends Component {
 		}
 
 		axios
-			.get('http://localhost:8080/api/messages', {
+			.get('/api/messages', {
 				params: {
 					limit: 60,
 					favorited: false,
@@ -289,7 +259,9 @@ class Messages extends Component {
 			this.state.messages.length &&
 			this.scrollAtBottom === true
 		) {
-			this.fetchMessages();
+			if (!this.state.loadingMessages) {
+				this.fetchMessages();
+			}
 		}
 	};
 
@@ -487,7 +459,6 @@ class Messages extends Component {
 			.unix(message.created_at)
 			.subtract('1', 'day');
 		const monthAfterMessage = moment.unix(message.created_at).add('1', 'day');
-		// open modal dialog with newly fetch messages within 25 days before and after the clicked message
 		this.setState(
 			{
 				startDate: monthBeforeMessage,
@@ -582,7 +553,6 @@ class Messages extends Component {
 		let usersSelect = null;
 
 		if (!this.state.error && this.state.messages) {
-
 			messagesMap = this.createMessagesArray(this.state.messages);
 
 			if (this.state.messages.length) {
@@ -639,11 +609,7 @@ class Messages extends Component {
 			<>
 				<Grid container spacing={3}>
 					<Grid item xs={12} md={4}>
-						<Box
-							boxShadow={2}
-							p={2}
-							position={'relative'}
-						>
+						<Box boxShadow={2} p={2} position={'relative'}>
 							<Box pb={1}>
 								<Typography variant="h6">Filters</Typography>
 							</Box>
@@ -709,14 +675,16 @@ class Messages extends Component {
 							<Box pb={1}>
 								<Typography variant="h6">Messages</Typography>
 							</Box>
+							{this.state.favorited ? null : loadingMessages}
 							<List
 								ref="messageList"
 								onScroll={this.onScroll}
 								style={{ overflowY: 'scroll', height: '500px' }}
 							>
-								{loadingMessages}
+							
 								{messagesMap}
 							</List>
+							{this.state.favorited ? loadingMessages : null}
 						</Box>
 					</Grid>
 				</Grid>

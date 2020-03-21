@@ -354,17 +354,47 @@ function getMessages(req, res) {
 				res.send(err);
 			});
 	} else if (dashboard !== 'false') {
-		Message.find(query)
-			.limit(newLimit)
-			.sort(newSort)
+		const agg = [
+			{
+				$match: {
+					created_at: {
+						$gte: Number(fromTS),
+						$lte: Number(toTS),
+					},
+				},
+			},
+			{
+				$project: {
+					_id: null,
+					created_at: 1,
+				},
+			},
+			{
+				$sort: {
+					created_at: 1,
+				},
+			},
+		];
+
+		Message.aggregate(agg)
 			.then(data => {
-				// console.log();
 				res.send(data);
 			})
 			.catch(err => {
-				console.log('err:', err);
 				res.send(err);
 			});
+
+		// Message.find(query)
+		// 	.limit(newLimit)
+		// 	.sort(newSort)
+		// 	.then(data => {
+		// 		// console.log();
+		// 		res.send(data);
+		// 	})
+		// 	.catch(err => {
+		// 		console.log('err:', err);
+		// 		res.send(err);
+		// 	});
 	} else if (detailMessage !== 'false') {
 		const detailMessages = [];
 

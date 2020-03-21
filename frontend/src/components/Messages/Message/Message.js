@@ -10,6 +10,8 @@ import Badge from '@material-ui/core/Badge';
 import Tooltip from '@material-ui/core/Tooltip';
 import Typography from '@material-ui/core/Typography';
 import { withStyles } from '@material-ui/core/styles';
+import Linkify from 'linkifyjs/react';
+
 
 const HtmlTooltip = withStyles(theme => ({
 	tooltip: {
@@ -59,6 +61,26 @@ class Message extends Component {
 	render() {
 		let likedMessageIcon = <FavoriteBorderIcon />;
 		let favoritedUsers = '';
+		let attachment = null;
+		let messageText = null;
+
+		if (this.props.message.text) {
+			if (this.props.message.text.includes('.gif')) {
+				messageText = (
+					<img
+						style={{ width: '100%', maxWidth: '300px' }}
+						alt="gif"
+						src={this.props.message.text}
+					></img>
+				);
+			} else {
+				messageText = <Linkify >{this.props.message.text}</Linkify>
+			}
+		}
+
+		if (this.props.attachments) {
+			attachment = this.props.attachments;
+		}
 
 		if (this.state.favoritedUsers) {
 			favoritedUsers = this.state.favoritedUsers;
@@ -166,9 +188,8 @@ class Message extends Component {
 							variant={'body1'}
 							style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
 						>
-							{this.props.message.text
-								? this.props.message.text
-								: this.props.attachments}
+							{attachment}
+							{messageText}
 						</Typography>
 					}
 				/>

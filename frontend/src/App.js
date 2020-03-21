@@ -22,7 +22,6 @@ import EqualizerIcon from '@material-ui/icons/Equalizer';
 import IconButton from '@material-ui/core/IconButton';
 import Link from '@material-ui/core/Link';
 
-
 import './App.scss';
 
 import Users from './containers/Users/Users';
@@ -69,9 +68,9 @@ const styles = theme => {
 		},
 		menuLink: {
 			'&.active': {
-				color: theme.palette.primary.main
-			}
-		}
+				color: theme.palette.primary.main,
+			},
+		},
 	};
 };
 
@@ -91,6 +90,40 @@ class App extends Component {
 			.catch(err => {
 				console.log(err);
 			});
+
+		this.addMessages()
+			.then(() => {
+				console.log('addedMessages successfully');
+			})
+			.catch(err => {
+				console.log(err);
+			});
+
+		this.updatedMessages()
+			.then(() => {
+				console.log('updateMessages successfully');
+			})
+			.catch(err => {
+				console.log(err);
+			});
+	}
+
+	addMessages() {
+		return axios
+			.get('/api/addMessages/18834987')
+			.then(response => {
+				console.log('addMessages repspone: ', response);
+			})
+			.catch(err => console.log(err));
+	}
+
+	updatedMessages() {
+		return axios
+			.get('/api/updateMessages/18834987?num=200')
+			.then(response => {
+				console.log('updateMessages response: ', response);
+			})
+			.catch(err => console.log(err));
 	}
 
 	handleDrawerToggle = () => {
@@ -104,9 +137,9 @@ class App extends Component {
 		let groupAvatar = <img src="" alt=""></img>;
 		let groupDescription = null;
 		let groupName = '';
+		let routes = null;
 
 		if (this.state.group) {
-
 			groupAvatar = (
 				<img
 					className={classes.groupMeImge}
@@ -117,6 +150,21 @@ class App extends Component {
 
 			groupDescription = <p>{this.state.group.description}</p>;
 			groupName = this.state.group.name;
+
+			routes = (
+				<>
+					<Route path="/users" exact={true} component={Users} />
+					<Route
+						path="/user-stats"
+						exact={true}
+						render={props => <UserStats group={this.state.group} {...props} />}
+					/>
+					<Route
+						path="/messages"
+						exact={true}
+						render={props => <Messages group={this.state.group} {...props} />}
+					/>				</>
+			);
 		}
 
 		let drawer = (
@@ -128,25 +176,46 @@ class App extends Component {
 
 				<Divider />
 				<List>
-					<ListItem className={classes.menuLink} button component={NavLink} exact={true} to="/" color="secondary">
+					<ListItem
+						className={classes.menuLink}
+						button
+						component={NavLink}
+						exact={true}
+						to="/"
+						color="secondary"
+					>
 						<ListItemIcon>
 							<HomeIcon />
 						</ListItemIcon>
 						<Typography>Overview</Typography>
 					</ListItem>
-					<ListItem className={classes.menuLink} button component={NavLink} exact={true} to="/messages">
+					<ListItem
+						className={classes.menuLink}
+						button
+						component={NavLink}
+						exact={true}
+						to="/messages"
+					>
 						<ListItemIcon>
 							<MailIcon />
 						</ListItemIcon>
 						<Typography>Messages</Typography>
 					</ListItem>
-					<ListItem className={classes.menuLink} button component={NavLink} exact={true} to="/users" color="secondary">
+					<ListItem
+						className={classes.menuLink}
+						button
+						component={NavLink}
+						exact={true}
+						to="/users"
+						color="secondary"
+					>
 						<ListItemIcon>
 							<GroupIcon />
 						</ListItemIcon>
 						<Typography>Users</Typography>
 					</ListItem>
-					<ListItem className={classes.menuLink}
+					<ListItem
+						className={classes.menuLink}
 						button
 						component={NavLink}
 						exact={true}
@@ -219,23 +288,12 @@ class App extends Component {
 
 				<main className={classes.content}>
 					<div className={classes.toolbar} />
-
 					<Route
 						path="/"
 						exact={true}
 						render={props => <Dashboard group={this.state.group} {...props} />}
 					/>
-					<Route path="/users" exact={true} component={Users} />
-					<Route
-						path="/user-stats"
-						exact={true}
-						render={props => <UserStats group={this.state.group} {...props} />}
-					/>
-					<Route
-						path="/messages"
-						exact={true}
-						render={props => <Messages group={this.state.group} {...props} />}
-					/>
+					{routes}
 				</main>
 			</div>
 		);
