@@ -170,7 +170,7 @@ class App extends Component {
 			<div>
 				<div className={classes.toolbar} />
 
-				<Box>{groupAvatar}</Box>
+				<Box height={250} overflow={"hidden"}>{groupAvatar}</Box>
 				<Box textAlign="center">{groupDescription}</Box>
 
 				<Divider />
