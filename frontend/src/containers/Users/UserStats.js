@@ -173,7 +173,6 @@ class UserStats extends React.Component {
 	};
 
 	componentDidMount() {
-		console.log('[UserStats.js] - ComponentDidMount');
 		this.fetchUserStats();
 	}
 

@@ -19,7 +19,6 @@ class Users extends Component {
 	};
 
 	componentDidMount() {
-		console.log('[Users.js] - ComponentDidMount');
 		axios
 			.get('/api/users')
 			.then(response => {
@@ -45,7 +44,6 @@ class Users extends Component {
 	};
 
 	render() {
-
 		let userMap = null;
 		let selectedUser = null;
 
@@ -70,15 +68,13 @@ class Users extends Component {
 				);
 			});
 		}
-
-		console.log('[User.js] - render');
 		return (
 			<>
 				<Box pb={2}>
-				<Typography variant="h6" align="center">
-					Users
-				</Typography>
-					</Box>
+					<Typography variant="h6" align="center">
+						Users
+					</Typography>
+				</Box>
 				<Container>
 					<Grid container spacing={3}>
 						{userMap}

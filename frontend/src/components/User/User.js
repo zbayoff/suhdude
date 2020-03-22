@@ -23,10 +23,6 @@ class User extends Component {
 		open: false,
 	};
 
-	componentDidMount() {
-		console.log('[User.js] - ComponentDidMount');
-	}
-
 	userClickHandler = user => {
 		this.props.userClickHandler(user);
 	};

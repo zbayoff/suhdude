@@ -12,7 +12,6 @@ import Typography from '@material-ui/core/Typography';
 import { withStyles } from '@material-ui/core/styles';
 import Linkify from 'linkifyjs/react';
 
-
 const HtmlTooltip = withStyles(theme => ({
 	tooltip: {
 		display: 'flex',
@@ -74,7 +73,7 @@ class Message extends Component {
 					></img>
 				);
 			} else {
-				messageText = <Linkify >{this.props.message.text}</Linkify>
+				messageText = <Linkify>{this.props.message.text}</Linkify>;
 			}
 		}
 
@@ -101,8 +100,6 @@ class Message extends Component {
 		}
 
 		let avatar = null;
-
-		// console.log('this.props.message.user_id: ', this.props.message.user_id);
 
 		if (
 			this.props.message.user_id === 'system' ||

@@ -78,11 +78,8 @@ class Dashboard extends Component {
 	};
 
 	componentDidMount() {
-		console.log('[Dashboard.js] - ComponentDidMount');
-
 		this.fetchMessages();
 	}
-
 
 	fetchMessages() {
 		const fromTS = this.state.startDate.unix();
@@ -101,13 +98,12 @@ class Dashboard extends Component {
 				},
 			})
 			.then(response => {
-				console.log('fetch messages successfully')
 				const messages = response.data;
 				this.setState({ messages: [] });
 				this.setState(
 					{
 						messages: [...this.state.messages, ...messages],
-						chart: <CircularProgress />
+						chart: <CircularProgress />,
 					},
 					() => {
 						this.calcNumMessages();
@@ -217,7 +213,7 @@ class Dashboard extends Component {
 		this.setState({
 			selectedKey: key,
 			anchorEl: null,
-			chart: <CircularProgress />
+			chart: <CircularProgress />,
 		});
 	};
 
@@ -246,12 +242,10 @@ class Dashboard extends Component {
 
 		getMessages(startOfWeek, now, true)
 			.then(response => {
-
 				const numMessagesSentThisWeek = response.data;
 
 				getMessages(oneWeekBeforeStartOfWeek, nowMinusOneWeek, true)
 					.then(response => {
-
 						const numMessagesSentLastWeek = response.data;
 
 						const numMsgsPercentChange = Math.floor(
@@ -286,8 +280,6 @@ class Dashboard extends Component {
 	};
 
 	render() {
-		console.log('[Dashboard.js] - render()');
-
 		let numMessages = <CircularProgress />;
 		let numMessagesSentThisWeek = <CircularProgress />;
 		let groupName = '';
@@ -304,7 +296,9 @@ class Dashboard extends Component {
 				);
 			} else if (Math.sign(this.state.numMsgsPercentChange) === 0) {
 				numMsgsPercentChange = (
-					<Typography>{this.state.numMsgsPercentChange}% change from last week</Typography>
+					<Typography>
+						{this.state.numMsgsPercentChange}% change from last week
+					</Typography>
 				);
 			} else {
 				numMsgsPercentChange = (
@@ -381,10 +375,7 @@ class Dashboard extends Component {
 					<Grid item xs={4} sm={3}>
 						<Box>
 							<List>
-								<ListItem
-									button
-									onClick={this.handleClickListItem}
-								>
+								<ListItem button onClick={this.handleClickListItem}>
 									<ListItemText primary={selectedOption['text']} />
 								</ListItem>
 							</List>

@@ -74,14 +74,10 @@ class Messages extends Component {
 	messageLimit = 50;
 
 	componentDidMount() {
-		console.log('[Messages.js] - ComponentDidMount');
 		this.fetchMessages();
-		
 	}
 
 	componentDidUpdate(prevProps, prevState, snapshot) {
-		console.log('[Messages.js] - ComponentDidUpdate');
-
 		// need to check if state has changed.
 		if (
 			JSON.stringify(prevState.messages) !== JSON.stringify(this.state.messages)
@@ -96,8 +92,6 @@ class Messages extends Component {
 	}
 
 	getSnapshotBeforeUpdate(prevProps, prevState) {
-		console.log('[Messages.js] - getSnapshotBeforeUpdate');
-
 		const { messageList } = this.refs;
 
 		const scrollPos = messageList.scrollTop;
@@ -112,15 +106,12 @@ class Messages extends Component {
 			return this.topMessage;
 		}
 
-
-
 		if (this.topMessage && this.state.favorited === false) {
 			ReactDOM.findDOMNode(this.topMessage).scrollIntoView();
 		}
 
 		return null;
 	}
-
 
 	fetchMessages = () => {
 		let fromTS = this.state.startDate;
@@ -174,7 +165,7 @@ class Messages extends Component {
 						skip += this.messageLimit;
 						this.setState(prevState => ({
 							messages: [...prevState.messages, ...messages],
-							skip
+							skip,
 						}));
 					}
 				} else {
@@ -191,7 +182,6 @@ class Messages extends Component {
 				}
 
 				this.setState({ loadingMessages: false });
-
 			})
 			.catch(err => console.log(err));
 	};
@@ -543,8 +533,6 @@ class Messages extends Component {
 	};
 
 	render() {
-		console.log('[Messages.js] - render');
-
 		const { classes } = this.props;
 
 		let messagesMap = null;
@@ -681,7 +669,6 @@ class Messages extends Component {
 								onScroll={this.onScroll}
 								style={{ overflowY: 'scroll', height: '500px' }}
 							>
-							
 								{messagesMap}
 							</List>
 							{this.state.favorited ? loadingMessages : null}

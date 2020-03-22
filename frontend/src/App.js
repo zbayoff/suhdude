@@ -81,7 +81,6 @@ class App extends Component {
 	};
 
 	componentDidMount() {
-		console.log('[App.js] - ComponentDidMount');
 		axios
 			.get(`/groupmeApi/group/18834987`)
 			.then(response => {
@@ -112,14 +111,14 @@ class App extends Component {
 		return axios
 			.get('/api/addMessages/18834987')
 			.then(response => {
-				console.log('addMessages repspone: ', response);
+				console.log('addMessages response: ', response);
 			})
 			.catch(err => console.log(err));
 	}
 
 	updatedMessages() {
 		return axios
-			.get('/api/updateMessages/18834987?num=200')
+			.get('/api/updateMessages/18834987?num=300')
 			.then(response => {
 				console.log('updateMessages response: ', response);
 			})
@@ -131,7 +130,6 @@ class App extends Component {
 	};
 
 	render() {
-		console.log('[App.js] render');
 		const { classes, theme } = this.props;
 
 		let groupAvatar = <img src="" alt=""></img>;
@@ -163,7 +161,8 @@ class App extends Component {
 						path="/messages"
 						exact={true}
 						render={props => <Messages group={this.state.group} {...props} />}
-					/>				</>
+					/>{' '}
+				</>
 			);
 		}
 
@@ -171,7 +170,7 @@ class App extends Component {
 			<div>
 				<div className={classes.toolbar} />
 
-				<Box height={250}>{groupAvatar}</Box>
+				<Box>{groupAvatar}</Box>
 				<Box textAlign="center">{groupDescription}</Box>
 
 				<Divider />

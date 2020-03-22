@@ -44,8 +44,6 @@ const useStyles = makeStyles(theme => ({
 const Navbar = (props) => {
 	const classes = useStyles();
 
-	// console.log('props', props.group)
-
 	return (
 		<div className={classes.root}>
 			<Drawer
