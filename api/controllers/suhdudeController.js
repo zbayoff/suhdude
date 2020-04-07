@@ -20,19 +20,12 @@ async function addMessages(req, res) {
 	const lastMsg = await getLastMsgID();
 	let lastMsgID = lastMsg.id;
 	const lastMsgIDfromGroupMe = await groupmeController.lastMsgID(groupID);
-	// const totalMessageCount = await groupmeController.totalMessageCountHandler(
-	// 	groupID
-	// );
-
-	// console.log('lastMsgIDfromGroupMe', lastMsgIDfromGroupMe);
-	// console.log('lastMsgID in DB', lastMsgID);
 
 	const all = [];
 	// let messageCount = 0;
 
 	// gets last messages from GroupMe that aren't in DB and uploads
 	while (lastMsgIDfromGroupMe !== lastMsgID) {
-		// console.log('Getting messages from lastID: ', lastMsgID);
 		// console.log('messageCount: ', messageCount);
 		const lastMessages = await groupmeController.getMessages(
 			groupID,
@@ -50,8 +43,6 @@ async function addMessages(req, res) {
 	}
 
 	// console.log('number of messages to insert: ', all.length);
-	// console.log('all: ', all);
-
 	Message.insertMany(all, { ordered: false })
 		.then(data => {
 			res.send(data);
@@ -249,9 +240,6 @@ function getMessages(req, res) {
 	const match = {}; // for aggregate by favorited
 	let newLimit = null;
 	let newSort = null;
-
-	console.log('fromTS: ', fromTS);
-	console.log('toTS: ', toTS);
 
 	if (beforeTS) {
 		query.created_at = {
@@ -642,14 +630,128 @@ function getUserStats(req, res) {
 								},
 							},
 						],
+						topTenMessageDays: [
+							{
+								$match: {
+									user_id: user.user_id,
+								},
+							},
+							{
+								$addFields: {
+									messageDay: {
+										$dateToString: {
+											format: '%Y-%m-%d',
+											date: {
+												$toDate: {
+													$multiply: ['$created_at', 1000],
+												},
+											},
+											timezone: 'America/New_York',
+										},
+									},
+								},
+							},
+							{
+								$group: {
+									_id: '$messageDay',
+									count: {
+										$sum: 1,
+									},
+								},
+							},
+							{
+								$sort: {
+									count: -1,
+								},
+							},
+							{
+								$limit: 10,
+							},
+						],
+						topTenLikesReceivedDays: [
+							{
+								$match: {
+									user_id: user.user_id,
+								},
+							},
+							{
+								$addFields: {
+									messageDay: {
+										$dateToString: {
+											format: '%Y-%m-%d',
+											date: {
+												$toDate: {
+													$multiply: ['$created_at', 1000],
+												},
+											},
+											timezone: 'America/New_York',
+										},
+									},
+								},
+							},
+							{
+								$group: {
+									_id: '$messageDay',
+									count: {
+										$sum: {
+											$size: '$favorited_by',
+										},
+									},
+								},
+							},
+							{
+								$sort: {
+									count: -1,
+								},
+							},
+							{
+								$limit: 10,
+							},
+						],
+						topTenLikesGivenOutDays: [
+							{
+								$match: {
+									favorited_by: {
+										$in: [user.user_id],
+									},
+								},
+							},
+							{
+								$addFields: {
+									messageDay: {
+										$dateToString: {
+											format: '%Y-%m-%d',
+											date: {
+												$toDate: {
+													$multiply: ['$created_at', 1000],
+												},
+											},
+											timezone: 'America/New_York',
+										},
+									},
+								},
+							},
+							{
+								$group: {
+									_id: '$messageDay',
+									count: {
+										$sum: 1,
+									},
+								},
+							},
+							{
+								$sort: { count: -1 },
+							},
+							{
+								$limit: 10,
+							},
+						],
 					},
 				},
 			];
 
 			return Message.aggregate(agg)
 				.then(data => {
-					// console.log('data: ', data);
-
 					return {
 						...user,
 						numMessages: data[0].numMessages[0].numMessages,
@@ -668,22 +770,165 @@ function getUserStats(req, res) {
 						avgLikesPerMessage: Number(
 							data[0].avgLikesPerMessage[0].avgLikesPerMessage.toFixed(2)
 						),
-						// numLikes: data[0].numLikes[0].numLikes,
+						topTenMessageDays: data[0].topTenMessageDays,
+						topTenLikesReceivedDays: data[0].topTenLikesReceivedDays,
+						topTenLikesGivenOutDays: data[0].topTenLikesGivenOutDays,
 					};
 				})
 				.catch(err => {
 					return err;
 				});
+		});
 
-			// return Message.find({ user_id: user.user_id })
-			// 	.count()
-			// 	.then(data => {
-			// 		console.log('data: ', data);
-			// 		return { ...user, numMessages: data };
-			// 	})
-			// 	.catch(err => {
-			// 		return err;
-			// 	});
+		Promise.all(userPromises)
+			.then(results => {
+				res.send(results);
+			})
+			.catch(err => console.log(err));
+	});
+}
+
+function getUserTopTen(req, res) {
+	// get all users
+	groupmeController.getGroup(18834987).then(group => {
+		const users = group.members;
+
+		const userPromises = users.map(user => {
+			const agg = [
+				{
+					$facet: {
+						topTenMessageDays: [
+							{
+								$match: {
+									user_id: user.user_id,
+								},
+							},
+							{
+								$addFields: {
+									messageDay: {
+										$dateToString: {
+											format: '%Y-%m-%d',
+											date: {
+												$toDate: {
+													$multiply: ['$created_at', 1000],
+												},
+											},
+											timezone: 'America/New_York',
+										},
+									},
+								},
+							},
+							{
+								$group: {
+									_id: '$messageDay',
+									count: {
+										$sum: 1,
+									},
+								},
+							},
+							{
+								$sort: {
+									count: -1,
+								},
+							},
+							{
+								$limit: 10,
+							},
+						],
+						topTenLikesReceivedDays: [
+							{
+								$match: {
+									user_id: user.user_id,
+								},
+							},
+							{
+								$addFields: {
+									messageDay: {
+										$dateToString: {
+											format: '%Y-%m-%d',
+											date: {
+												$toDate: {
+													$multiply: ['$created_at', 1000],
+												},
+											},
+											timezone: 'America/New_York',
+										},
+									},
+								},
+							},
+							{
+								$group: {
+									_id: '$messageDay',
+									count: {
+										$sum: {
+											$size: '$favorited_by',
+										},
+									},
+								},
+							},
+							{
+								$sort: {
+									count: -1,
+								},
+							},
+							{
+								$limit: 10,
+							},
+						],
+						topTenLikesGivenOutDays: [
+							{
+								$match: {
+									favorited_by: {
+										$in: [user.user_id],
+									},
+								},
+							},
+							{
+								$addFields: {
+									messageDay: {
+										$dateToString: {
+											format: '%Y-%m-%d',
+											date: {
+												$toDate: {
+													$multiply: ['$created_at', 1000],
+												},
+											},
+											timezone: 'America/New_York',
+										},
+									},
+								},
+							},
+							{
+								$group: {
+									_id: '$messageDay',
+									count: {
+										$sum: 1,
+									},
+								},
+							},
+							{
+								$sort: { count: -1 },
+							},
+							{
+								$limit: 10,
+							},
+						],
+					},
+				},
+			];
+
+			return Message.aggregate(agg)
+				.then(data => {
+					return {
+						...user,
+						topTenMessageDays: data[0].topTenMessageDays,
+						topTenLikesReceivedDays: data[0].topTenLikesReceivedDays,
+						topTenLikesGivenOutDays: data[0].topTenLikesGivenOutDays,
+					};
+				})
+				.catch(err => {
+					return err;
+				});
 		});
 
 		Promise.all(userPromises)
@@ -692,11 +937,92 @@ function getUserStats(req, res) {
 				// console.log('results: ', results);
 			})
 			.catch(err => console.log(err));
-
-		// console.log('userStats: ', userStats);
 	});
+}
 
-	// for each user, get a list of stats
+function topTen(req, res) {
+	const agg = [
+		{
+			$facet: {
+				topTenMessageDays: [
+					{
+						$addFields: {
+							messageDay: {
+								$dateToString: {
+									format: '%Y-%m-%d',
+									date: {
+										$toDate: {
+											$multiply: ['$created_at', 1000],
+										},
+									},
+									timezone: 'America/New_York',
+								},
+							},
+						},
+					},
+					{
+						$group: {
+							_id: '$messageDay',
+							count: {
+								$sum: 1,
+							},
+						},
+					},
+					{
+						$sort: {
+							count: -1,
+						},
+					},
+					{
+						$limit: 10,
+					},
+				],
+				topTenLikesDays: [
+					{
+						$addFields: {
+							messageDay: {
+								$dateToString: {
+									format: '%Y-%m-%d',
+									date: {
+										$toDate: {
+											$multiply: ['$created_at', 1000],
+										},
+									},
+									timezone: 'America/New_York',
+								},
+							},
+						},
+					},
+					{
+						$group: {
+							_id: '$messageDay',
+							count: {
+								$sum: {
+									$size: '$favorited_by',
+								},
+							},
+						},
+					},
+					{
+						$sort: {
+							count: -1,
+						},
+					},
+					{
+						$limit: 10,
+					},
+				],
+			},
+		},
+	];
+	Message.aggregate(agg)
+		.then(data => {
+			console.log('data: ', data);
+			res.send(data);
+		})
+		.catch(err => {
+			res.send(err);
+		});
 }
 
 // getUserStats();
@@ -709,4 +1035,6 @@ module.exports = {
 	deleteMessages,
 	getUsers,
 	getUserStats,
+	getUserTopTen,
+	topTen,
 };

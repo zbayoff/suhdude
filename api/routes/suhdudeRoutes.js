@@ -9,5 +9,7 @@ router.get('/updateMessages/:group_id', suhdudeController.updateMessages);
 router.get('/deleteMessages', suhdudeController.deleteMessages);
 router.get('/userStats', suhdudeController.getUserStats);
 router.get('/users', suhdudeController.getUsers);
+router.get('/userTopTen', suhdudeController.getUserTopTen);
+router.get('/topTen', suhdudeController.topTen);
 
 module.exports = router;

@@ -9,15 +9,6 @@ import ListItem from '@material-ui/core/ListItem';
 import ListItemText from '@material-ui/core/ListItemText';
 import Moment from 'react-moment';
 import { TimeSeries } from 'pondjs';
-import {
-	Charts,
-	ChartContainer,
-	ChartRow,
-	YAxis,
-	LineChart,
-	Resizable,
-	styler,
-} from 'react-timeseries-charts';
 
 import 'react-dates/initialize';
 import { DateRangePicker } from 'react-dates';
@@ -30,6 +21,8 @@ import moment from 'moment';
 import { withStyles } from '@material-ui/core/styles';
 
 import { getMessages } from '../../utils/apiHelper';
+
+import MessageTimeSeriesChart from '../../components/Dashboard/MessageTimeSeriesChart';
 
 import './Dashboard.scss';
 
@@ -72,9 +65,10 @@ class Dashboard extends Component {
 		datePickerOpen: false,
 		focusedInput: 'startDate',
 		selectedUsers: [],
-		chart: <CircularProgress />,
 		numMsgsPercentChange: null,
 		numMessagesSentThisWeek: null,
+		series: null,
+		loadingMessages: false,
 	};
 
 	componentDidMount() {
@@ -84,6 +78,8 @@ class Dashboard extends Component {
 	fetchMessages() {
 		const fromTS = this.state.startDate.unix();
 		const toTS = this.state.endDate.unix();
+
+		this.setState({ loadingMessages: true });
 
 		axios
 			.get(`/api/messages`, {
@@ -99,69 +95,42 @@ class Dashboard extends Component {
 			})
 			.then(response => {
 				const messages = response.data;
+				let series = new TimeSeries({
+					name: 'messages',
+					columns: ['time', 'value'],
+					utc: false,
+					points: messages.map((message, index) => {
+						return [moment.unix(message.created_at).valueOf(), index];
+					}),
+				});
+
 				this.setState({ messages: [] });
 				this.setState(
 					{
 						messages: [...this.state.messages, ...messages],
-						chart: <CircularProgress />,
+						series,
+						loadingMessages: false,
 					},
 					() => {
 						this.calcNumMessages();
-						this.createChart();
+						this.renderChart();
 					}
 				);
 			})
 			.catch(err => console.log(err));
 	}
 
-	createChart() {
-		let messages = this.state.messages;
-
-		let series = new TimeSeries({
-			name: 'messages',
-			columns: ['time', 'value'],
-			utc: false,
-			points: messages.map((message, index) => {
-				return [moment.unix(message.created_at).valueOf(), index];
-			}),
-		});
-
-		const style = styler([{ key: 'value', color: '#3f51b5', width: 2 }]);
-
-		const yAxisStyles = {
-			label: {
-				'font-size': 16,
-			},
-		};
-
-		const seriesTimerange = series.timerange();
-
-		if (seriesTimerange) {
-			this.setState({
-				chart: (
-					<Resizable>
-						<ChartContainer
-							titleStyle={{ fill: '#555', fontWeight: 500 }}
-							timeRange={seriesTimerange}
-						>
-							<ChartRow height="300">
-								<YAxis
-									id="messages"
-									label="# messages"
-									min={0}
-									max={messages.length}
-									style={yAxisStyles} // Default label color fontWeight: 100, fontSize: 12, font: '"Goudy Bookletter 1911", sans-serif"' }
-									format=".0f"
-								/>
-								<Charts>
-									<LineChart axis="messages" series={series} style={style} />
-								</Charts>
-							</ChartRow>
-						</ChartContainer>
-					</Resizable>
-				),
-			});
+	renderChart() {
+		if (this.state.loadingMessages === false) {
+			return (
+				<MessageTimeSeriesChart
+					messages={this.state.messages}
+					series={this.state.series}
+				/>
+			);
 		}
+
+		return <CircularProgress />;
 	}
 
 	startDateChangeHandler = date => {
@@ -287,7 +256,10 @@ class Dashboard extends Component {
 		let groupStartDateWrapper = <CircularProgress />;
 
 		let numMsgsPercentChange = null;
-		if (this.state.numMsgsPercentChange) {
+		if (
+			this.state.numMsgsPercentChange &&
+			isFinite(this.state.numMsgsPercentChange)
+		) {
 			if (Math.sign(this.state.numMsgsPercentChange) === -1) {
 				numMsgsPercentChange = (
 					<Typography style={{ color: 'red' }}>
@@ -309,7 +281,7 @@ class Dashboard extends Component {
 			}
 		}
 
-		if (this.state.numMessagesSentThisWeek) {
+		if (this.state.numMessagesSentThisWeek !== null) {
 			numMessagesSentThisWeek = (
 				<Typography variant={'h6'}>
 					{this.state.numMessagesSentThisWeek}
@@ -407,7 +379,7 @@ class Dashboard extends Component {
 					</Grid>
 				</Grid>
 				<Grid item xs={12}>
-					<Box textAlign="center">{this.state.chart}</Box>
+					<Box textAlign="center">{this.renderChart()}</Box>
 				</Grid>
 			</Grid>
 		);

@@ -19,6 +19,7 @@ import HomeIcon from '@material-ui/icons/Home';
 import GroupIcon from '@material-ui/icons/Group';
 import MenuIcon from '@material-ui/icons/Menu';
 import EqualizerIcon from '@material-ui/icons/Equalizer';
+import FormatListNumberedIcon from '@material-ui/icons/FormatListNumbered';
 import IconButton from '@material-ui/core/IconButton';
 import Link from '@material-ui/core/Link';
 
@@ -28,6 +29,7 @@ import Users from './containers/Users/Users';
 import UserStats from './containers/Users/UserStats';
 import Messages from './containers/Messages/Messages';
 import Dashboard from './containers/Dashboard/Dashboard';
+import TopTen from './containers/TopTen/TopTen';
 
 const drawerWidth = 240;
 
@@ -158,6 +160,11 @@ class App extends Component {
 						render={props => <UserStats group={this.state.group} {...props} />}
 					/>
 					<Route
+						path="/top-ten"
+						exact={true}
+						render={props => <TopTen group={this.state.group} {...props} />}
+					/>
+					<Route
 						path="/messages"
 						exact={true}
 						render={props => <Messages group={this.state.group} {...props} />}
@@ -182,6 +189,7 @@ class App extends Component {
 						exact={true}
 						to="/"
 						color="secondary"
+						onTouchEnd={this.handleDrawerToggle}
 					>
 						<ListItemIcon>
 							<HomeIcon />
@@ -194,6 +202,7 @@ class App extends Component {
 						component={NavLink}
 						exact={true}
 						to="/messages"
+						onTouchEnd={this.handleDrawerToggle}
 					>
 						<ListItemIcon>
 							<MailIcon />
@@ -206,6 +215,7 @@ class App extends Component {
 						component={NavLink}
 						exact={true}
 						to="/users"
+						onTouchEnd={this.handleDrawerToggle}
 						color="secondary"
 					>
 						<ListItemIcon>
@@ -219,12 +229,27 @@ class App extends Component {
 						component={NavLink}
 						exact={true}
 						to="/user-stats"
+						onTouchEnd={this.handleDrawerToggle}
 						color="secondary"
 					>
 						<ListItemIcon>
 							<EqualizerIcon />
 						</ListItemIcon>
 						<Typography>User Stats</Typography>
+					</ListItem>
+					<ListItem
+						className={classes.menuLink}
+						button
+						component={NavLink}
+						exact={true}
+						to="/top-ten"
+						onTouchEnd={this.handleDrawerToggle}
+						color="secondary"
+					>
+						<ListItemIcon>
+							<FormatListNumberedIcon />
+						</ListItemIcon>
+						<Typography>Top Ten</Typography>
 					</ListItem>
 				</List>
 			</div>

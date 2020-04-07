@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import axios from 'axios';
 import moment from 'moment';
 import { SingleDatePicker } from 'react-dates';
+import queryString from 'query-string';
 
 import Grid from '@material-ui/core/Grid';
 import Box from '@material-ui/core/Box';
@@ -74,7 +75,19 @@ class Messages extends Component {
 	messageLimit = 50;
 
 	componentDidMount() {
-		this.fetchMessages();
+		let params = queryString.parse(this.props.location.search);
+		if (params.date) {
+			this.setState(
+				{
+					endDate: moment.unix(params.date).endOf('day'),
+				},
+				() => {
+					this.fetchMessages();
+				}
+			);
+		} else {
+			this.fetchMessages();
+		}
 	}
 
 	componentDidUpdate(prevProps, prevState, snapshot) {
@@ -150,7 +163,7 @@ class Messages extends Component {
 			})
 			.then(response => {
 				const messages = response.data;
-				// initially fetching messages?
+
 				if (this.state.messages.length && this.state.favorited !== true) {
 					if (messages.length) {
 						this.setState(prevState => ({
@@ -427,7 +440,7 @@ class Messages extends Component {
 			if (date.isValid()) {
 				this.setState(
 					{
-						endDate: date,
+						endDate: moment(date).endOf('day'),
 						messages: [],
 						beforeDate: null,
 					},
@@ -507,7 +520,7 @@ class Messages extends Component {
 				this.isMessageWithinNTime(
 					message.created_at,
 					msgsArray[index - 1]['created_at'],
-					5
+					2
 				)
 			) {
 				messageTime = false;
@@ -653,13 +666,7 @@ class Messages extends Component {
 						</Box>
 					</Grid>
 					<Grid item xs={12} md={8}>
-						<Box
-							boxShadow={2}
-							overflow="scroll"
-							p={2}
-							position={'relative'}
-							style={{ overflowY: 'scroll' }}
-						>
+						<Box boxShadow={2} overflow="auto" p={2} position={'relative'}>
 							<Box pb={1}>
 								<Typography variant="h6">Messages</Typography>
 							</Box>
@@ -667,7 +674,11 @@ class Messages extends Component {
 							<List
 								ref="messageList"
 								onScroll={this.onScroll}
-								style={{ overflowY: 'scroll', height: '500px' }}
+								style={{
+									overflowY: 'scroll',
+									overflowX: 'hidden',
+									height: '500px',
+								}}
 							>
 								{messagesMap}
 							</List>
