@@ -7,8 +7,13 @@ import MenuItem from '@material-ui/core/MenuItem';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemText from '@material-ui/core/ListItemText';
-import Moment from 'react-moment';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+
 import { TimeSeries } from 'pondjs';
+
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+
+import { getMessages } from '../../utils/apiHelper';
 
 import 'react-dates/initialize';
 import { DateRangePicker } from 'react-dates';
@@ -20,16 +25,15 @@ import moment from 'moment';
 
 import { withStyles } from '@material-ui/core/styles';
 
-import { getMessages } from '../../utils/apiHelper';
-
 import MessageTimeSeriesChart from '../../components/Dashboard/MessageTimeSeriesChart';
+import Message from '../../components/Messages/Message/Message';
 
 import './Dashboard.scss';
 
 const timeSelectOptions = [
-	{ key: '1d', text: 'Past 1 day' },
-	{ key: '1w', text: 'Past 1 week' },
-	{ key: '1m', text: 'Past 1 month' },
+	{ key: '1d', text: 'Today', past_text: 'yesterday' },
+	{ key: '1w', text: 'This week', past_text: 'last week' },
+	{ key: '1m', text: 'This month', past_text: 'last month' },
 	{ key: 'custom', text: 'Select Range' },
 ];
 
@@ -50,6 +54,17 @@ const styles = theme => {
 
 		primary: {},
 		icon: {},
+		rowContainer: {
+			textDecoration: 'none',
+			display: 'flex',
+			'&:hover': {
+				backgroundColor: 'rgba(0, 0, 0, 0.04)',
+			},
+			color: '#000',
+			'&:visited': {
+				color: '#000',
+			},
+		},
 	};
 };
 
@@ -57,7 +72,7 @@ class Dashboard extends Component {
 	state = {
 		numMessages: 0,
 		messages: [],
-		startDate: moment().subtract(1, 'd'),
+		startDate: moment().startOf('day'),
 		// .unix(), // set default to 1 days from now
 		endDate: moment(),
 		anchorEl: null,
@@ -66,13 +81,24 @@ class Dashboard extends Component {
 		focusedInput: 'startDate',
 		selectedUsers: [],
 		numMsgsPercentChange: null,
-		numMessagesSentThisWeek: null,
+		numMessagesSent: null,
 		series: null,
 		loadingMessages: false,
+		randomMessage: null,
 	};
 
 	componentDidMount() {
 		this.fetchMessages();
+		this.getMessage();
+	}
+
+	getMessage() {
+		axios
+			.get('/api/randomMessage')
+			.then(response => {
+				this.setState({ randomMessage: response.data });
+			})
+			.catch(err => console.log(err));
 	}
 
 	fetchMessages() {
@@ -110,6 +136,7 @@ class Dashboard extends Component {
 						messages: [...this.state.messages, ...messages],
 						series,
 						loadingMessages: false,
+						numMessagesSent: messages.length,
 					},
 					() => {
 						this.calcNumMessages();
@@ -156,24 +183,27 @@ class Dashboard extends Component {
 
 		switch (key) {
 			case '1d':
-				startDate = moment().subtract(1, 'day');
+				startDate = moment().startOf('day');
 				endDate = moment();
 				this.onDatesChange({ startDate, endDate });
 				break;
 			case '1w':
-				startDate = moment().subtract(1, 'week');
+				startDate = moment().startOf('isoWeek');
 				endDate = moment();
 				this.onDatesChange({ startDate, endDate });
 				break;
 			case '1m':
-				startDate = moment().subtract(1, 'month');
+				startDate = moment().startOf('month');
 				endDate = moment();
 				this.onDatesChange({ startDate, endDate });
 				break;
 			case 'custom':
+				this.setState({
+					numMsgsPercentChange: null,
+				});
 				break;
 			default:
-				startDate = moment().subtract(1, 'week');
+				startDate = moment().startOf('isoWeek');
 				endDate = moment();
 				this.onDatesChange({ startDate, endDate });
 				break;
@@ -195,38 +225,87 @@ class Dashboard extends Component {
 
 		let now = moment().unix();
 
-		let startOfWeek = moment()
-			.startOf('isoWeek')
-			.unix();
+		let startDate = null;
+		let beforeStartDate = null;
+		let nowMinusTimePeriod = null;
 
-		let oneWeekBeforeStartOfWeek = moment
-			.unix(startOfWeek)
-			.subtract('1', 'week')
-			.unix();
+		switch (this.state.selectedKey) {
+			case '1d':
+				startDate = moment()
+					.startOf('day')
+					.unix();
+				beforeStartDate = moment
+					.unix(startDate)
+					.subtract('1', 'day')
+					.unix();
+				nowMinusTimePeriod = moment
+					.unix(now)
+					.subtract('1', 'day')
+					.unix();
 
-		let nowMinusOneWeek = moment
-			.unix(now)
-			.subtract('1', 'week')
-			.unix();
+				break;
+			case '1w':
+				startDate = moment()
+					.startOf('isoWeek')
+					.unix();
+				beforeStartDate = moment
+					.unix(startDate)
+					.subtract('1', 'week')
+					.unix();
+				nowMinusTimePeriod = moment
+					.unix(now)
+					.subtract('1', 'week')
+					.unix();
 
-		getMessages(startOfWeek, now, true)
+				break;
+			case '1m':
+				startDate = moment()
+					.startOf('month')
+					.unix();
+				beforeStartDate = moment
+					.unix(startDate)
+					.subtract('1', 'month')
+					.unix();
+				nowMinusTimePeriod = moment
+					.unix(now)
+					.subtract('1', 'month')
+					.unix();
+
+				break;
+			case 'custom':
+				break;
+			default:
+				startDate = moment()
+					.startOf('isoWeek')
+					.unix();
+				beforeStartDate = moment
+					.unix(startDate)
+					.subtract('1', 'week')
+					.unix();
+				nowMinusTimePeriod = moment
+					.unix(now)
+					.subtract('1', 'week')
+					.unix();
+				break;
+		}
+
+		getMessages(startDate, now, true)
 			.then(response => {
-				const numMessagesSentThisWeek = response.data;
+				const numMessagesSentThisTimePeriod = response.data;
 
-				getMessages(oneWeekBeforeStartOfWeek, nowMinusOneWeek, true)
+				getMessages(beforeStartDate, nowMinusTimePeriod, true)
 					.then(response => {
-						const numMessagesSentLastWeek = response.data;
+						const numMessagesSentLastTimePeriod = response.data;
 
 						const numMsgsPercentChange = Math.floor(
-							((numMessagesSentThisWeek.length -
-								numMessagesSentLastWeek.length) /
-								numMessagesSentLastWeek.length) *
+							((numMessagesSentThisTimePeriod.length -
+								numMessagesSentLastTimePeriod.length) /
+								numMessagesSentLastTimePeriod.length) *
 								100
 						);
 
 						this.setState({
 							numMsgsPercentChange,
-							numMessagesSentThisWeek: numMessagesSentThisWeek.length,
 						});
 					})
 					.catch(err => console.log(err));
@@ -250,10 +329,12 @@ class Dashboard extends Component {
 
 	render() {
 		let numMessages = <CircularProgress />;
-		let numMessagesSentThisWeek = <CircularProgress />;
-		let groupName = '';
-		let groupStartDate = '';
-		let groupStartDateWrapper = <CircularProgress />;
+		let numMessagesSent = <CircularProgress />;
+		let randomMessage = null;
+
+		const selectedOption = timeSelectOptions.find(
+			element => element.key === this.state.selectedKey
+		);
 
 		let numMsgsPercentChange = null;
 		if (
@@ -263,29 +344,30 @@ class Dashboard extends Component {
 			if (Math.sign(this.state.numMsgsPercentChange) === -1) {
 				numMsgsPercentChange = (
 					<Typography style={{ color: 'red' }}>
-						{this.state.numMsgsPercentChange}% down from last week
+						{this.state.numMsgsPercentChange}% down from{' '}
+						{selectedOption['past_text']}
 					</Typography>
 				);
 			} else if (Math.sign(this.state.numMsgsPercentChange) === 0) {
 				numMsgsPercentChange = (
 					<Typography>
-						{this.state.numMsgsPercentChange}% change from last week
+						{this.state.numMsgsPercentChange}% change from{' '}
+						{selectedOption['past_text']}
 					</Typography>
 				);
 			} else {
 				numMsgsPercentChange = (
 					<Typography style={{ color: 'green' }}>
-						{this.state.numMsgsPercentChange}% up from last week
+						{this.state.numMsgsPercentChange}% up from{' '}
+						{selectedOption['past_text']}
 					</Typography>
 				);
 			}
 		}
 
-		if (this.state.numMessagesSentThisWeek !== null) {
-			numMessagesSentThisWeek = (
-				<Typography variant={'h6'}>
-					{this.state.numMessagesSentThisWeek}
-				</Typography>
+		if (this.state.numMessagesSent !== null) {
+			numMessagesSent = (
+				<Typography variant={'h6'}>{this.state.numMessagesSent}</Typography>
 			);
 		}
 
@@ -294,16 +376,7 @@ class Dashboard extends Component {
 
 		if (!this.state.error && this.props.group) {
 			numMessages = this.props.group.messages.count;
-			groupName = this.props.group.name;
-			groupStartDate = new Date(this.props.group.created_at);
-			groupStartDateWrapper = (
-				<Moment unix date={groupStartDate} format="MMM D, YYYY LT" />
-			);
 		}
-
-		const selectedOption = timeSelectOptions.find(
-			element => element.key === this.state.selectedKey
-		);
 
 		let datePicker = null;
 
@@ -322,37 +395,59 @@ class Dashboard extends Component {
 			);
 		}
 
+		if (this.state.randomMessage && this.props.group) {
+			randomMessage = (
+				<a
+					href={
+						'/#/messages?date=' + moment(this.state.randomMessage.created_at)
+					}
+					className={classes.rowContainer}
+				>
+					<Message
+						message={this.state.randomMessage}
+						key={this.state.randomMessage.id}
+						group={this.props.group}
+					></Message>
+				</a>
+			);
+		}
+
 		return (
 			<Grid container spacing={3}>
-				<Grid item xs={12} sm={12} md={4} lg={3}>
-					<Box height={150} boxShadow={2} p={2} align={'center'}>
-						<Typography>{groupName} start date: </Typography>
-						<Typography variant={'h6'}>{groupStartDateWrapper}</Typography>
+				<Grid item xs={12} sm={12} md={4} lg={4}>
+					<Box boxShadow={2} p={2} align={'center'}>
+						<Typography>Message of the Day</Typography>
+
+						{randomMessage}
 					</Box>
 				</Grid>
-				<Grid item xs={12} sm={12} md={4} lg={3}>
+				<Grid item xs={12} sm={12} md={4} lg={4}>
 					<Box height={150} boxShadow={2} p={2} align={'center'}>
 						<Typography>Total Messages Sent:</Typography>
 						<Typography variant={'h6'}>{numMessages}</Typography>
 					</Box>
 				</Grid>
-				<Grid item xs={12} sm={12} md={4} lg={3}>
+				<Grid item xs={12} sm={12} md={4} lg={4}>
 					<Box height={150} boxShadow={2} p={2} align={'center'}>
-						<Typography>Messages Sent This Week</Typography>
-						{numMessagesSentThisWeek}
-						{numMsgsPercentChange}
-					</Box>
-				</Grid>
-				<Grid container item xs={12} alignItems="center">
-					<Grid item xs={4} sm={3}>
-						<Box>
-							<List>
-								<ListItem button onClick={this.handleClickListItem}>
-									<ListItemText primary={selectedOption['text']} />
+						<Box display="flex" alignItems="center">
+							<Typography>Messages Sent:</Typography>
+							<List style={{ padding: 0 }}>
+								<ListItem
+									style={{ paddingTop: 0, paddingBottom: 0, margin: 0 }}
+									button
+									onClick={this.handleClickListItem}
+								>
+									<ListItemText
+										style={{ padding: 0, margin: 0 }}
+										primary={selectedOption['text']}
+									/>
+									<ListItemIcon>
+										<ExpandMoreIcon />
+									</ListItemIcon>
 								</ListItem>
 							</List>
 							<Menu
-								id="lock-menu"
+								id="lock-menu-2"
 								anchorEl={anchorEl}
 								open={Boolean(anchorEl)}
 								onClose={this.handleClose}
@@ -373,7 +468,11 @@ class Dashboard extends Component {
 								})}
 							</Menu>
 						</Box>
-					</Grid>
+						{numMessagesSent}
+						{numMsgsPercentChange}
+					</Box>
+				</Grid>
+				<Grid container item xs={12} alignItems="center">
 					<Grid item xs={8} sm={6}>
 						{datePicker}
 					</Grid>

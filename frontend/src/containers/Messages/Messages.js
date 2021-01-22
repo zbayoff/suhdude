@@ -79,7 +79,7 @@ class Messages extends Component {
 		if (params.date) {
 			this.setState(
 				{
-					endDate: moment.unix(params.date).endOf('day'),
+					endDate: moment.unix(params.date),
 				},
 				() => {
 					this.fetchMessages();
@@ -163,6 +163,8 @@ class Messages extends Component {
 			})
 			.then(response => {
 				const messages = response.data;
+
+				// console.log('messages: ', messages)
 
 				if (this.state.messages.length && this.state.favorited !== true) {
 					if (messages.length) {
@@ -489,30 +491,9 @@ class Messages extends Component {
 
 	createMessagesArray = messagesArray => {
 		let messagesMap = null;
-		let attachments = null;
 		let messageTime = false;
 
-		messagesMap = messagesArray.map((message, index, msgsArray) => {
-			// build dynamic display based on attachments
-			if (message.attachments) {
-				attachments = message.attachments.map(attachment => {
-					let jsx = [];
-					if (attachment.type === 'image') {
-						jsx.push(
-							<Box maxWidth={300} key={message.id}>
-								<img
-									src={attachment.url}
-									className=""
-									width={'100%'}
-									alt="attachment"
-								/>
-							</Box>
-						);
-					}
-
-					return jsx;
-				});
-			}
+		messagesMap = messagesArray.map((message, index, msgsArray) => {			
 
 			if (index === 0) {
 				messageTime = true;
@@ -535,7 +516,6 @@ class Messages extends Component {
 					clickHandler={event => this.messageClickHandler(message)}
 					displayMessageTime={messageTime}
 					message={message}
-					attachments={attachments}
 					key={message.id}
 					group={this.props.group}
 				></Message>

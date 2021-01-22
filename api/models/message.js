@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 
 const messageSchema = new Schema(
 	{
-		_id: String,
+		// _id: String,
 		id: String,
 		text: String,
 		created_at: { type: Number, index: true },
@@ -23,6 +23,11 @@ const messageSchema = new Schema(
 	{ strict: false }
 );
 
+const randomMessageSchema = new Schema({});
+
+randomMessageSchema.add(messageSchema).add({ date: Number });
+
 messageSchema.index({ text: 'text' });
 
 module.exports = mongoose.model('Message', messageSchema);
+module.exports = mongoose.model('RandomMessage', randomMessageSchema);

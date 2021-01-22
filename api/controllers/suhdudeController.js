@@ -3,6 +3,7 @@
 
 const async = require('async');
 const isEqual = require('lodash.isequal');
+const moment = require('moment');
 
 const mongoose = require('mongoose');
 const querystring = require('querystring');
@@ -10,6 +11,7 @@ const querystring = require('querystring');
 const groupmeController = require('./groupmeController');
 
 const Message = mongoose.model('Message');
+const RandomMessage = mongoose.model('RandomMessage');
 
 function getLastMsgID() {
 	return Message.findOne().sort({ created_at: -1 });
@@ -34,7 +36,7 @@ async function addMessages(req, res) {
 			lastMsgID // after_id
 		);
 
-		// console.log('lastMsgID: ', lastMsgID);
+		// console.log('lastMessages: ', lastMessages);
 
 		lastMsgID = lastMessages.slice(-1)[0].id;
 		// console.log('updated lastMsgID: ', lastMsgID);
@@ -42,8 +44,11 @@ async function addMessages(req, res) {
 		all.push(...lastMessages);
 	}
 
+	// remove duplicates from all array
+	const uniqueMessages = [...new Set(all)];
+
 	// console.log('number of messages to insert: ', all.length);
-	Message.insertMany(all, { ordered: false })
+	Message.insertMany(uniqueMessages, { ordered: false })
 		.then(data => {
 			res.send(data);
 		})
@@ -161,59 +166,70 @@ async function updateMessages(req, res) {
 			}
 		})
 		.catch(err => res.send(err));
+}
 
-	// const lastMsgInDB = await getLastMsgID();
-	// const lastMsgIDinGroupMe = await groupmeController.lastMsgID(groupID);
+// add/update a random message of the day
+async function randomMessage(req, res) {
+	// get random message stored in DB
+	const randomMessageinDB = await RandomMessage.find({});
 
-	// console.log('lastMsgIDinGroupMe: ', lastMsgIDinGroupMe);
-	// const lastMsgIDinGroupMePlusOne = lastMsgIDinGroupMe + 1;
-	// console.log('lastMsgIDinGroupMePlusOne: ', lastMsgIDinGroupMePlusOne);
+	const agg = [{ $sample: { size: 1 } }];
 
-	// const lastMessageInGroupME = await groupmeController.getMessages(
-	// 	groupID,
-	// 	lastMsgIDinGroupMePlusOne,
-	// 	'',
-	// 	'',
-	// 	1
-	// );
+	if (randomMessageinDB.length) {
+		// check if date is current day, if not, update with new random message
 
-	// console.log('lastMessageInGroupME: ', lastMessageInGroupME);
+		if (moment(randomMessageinDB[0].date).isSame(moment(), 'day')) {
+			res.send(randomMessageinDB[0]);
+		} else {
+			Message.aggregate(agg)
+				.then(data => {
+					const randomMessage = Object.assign(data[0]);
 
-	// console.log('lastMsgInDB: ', lastMsgInDB);
-	// const lastMsgID = lastMsgInDB.id;
+					randomMessage.date = moment.now();
 
-	// check if lastMsg is truly the last message i
+					RandomMessage.deleteOne({})
+						.then(() => {
+							RandomMessage.create(randomMessage)
+								.then(() => {
+									res.send(randomMessage);
+								})
+								.catch(err => {
+									console.log('err:', err);
+									res.send(err);
+								});
+						})
+						.catch(err => {
+							console.log('err:', err);
+							res.send(err);
+						});
+				})
+				.catch(err => {
+					console.log('err:', err);
+					res.send(err);
+				});
+		}
+	} else {
+		// insert random message and send back
+		Message.aggregate(agg)
+			.then(data => {
+				const randomMessage = Object.assign(data[0]);
 
-	// const messageBeforeLast = await groupmeController.getMessages(
-	// 	groupID,
-	// 	'',
-	// 	'',
-	// 	lastMsgID, // after_id
-	// 	1
-	// );
-	// console.log('messageBeforeLast: ', messageBeforeLast);
-	// const messageBeforeLastID = messageBeforeLast[0].id;
+				randomMessage.date = moment.now();
 
-	// const messageCount = 0;
-
-	// const all = [];
-
-	// gets last messages from GroupMe that aren't in DB and uploads
-	// while (messageCount < Number(numMsgstoRefresh)) {
-	// 	const lastMessages = await groupmeController.getMessages(
-	// 		groupID,
-	// 		messageBeforeLastID, // before_id
-	// 		'',
-	// 		'',
-	// 		100
-	// 	);
-
-	// 	lastMsgID = lastMessages[0].id;
-
-	// 	all.push(...lastMessages);
-
-	// 	messageCount += 100;
-	// }
+				RandomMessage.create(randomMessage)
+					.then(() => {
+						res.send(randomMessage);
+					})
+					.catch(err => {
+						console.log('err:', err);
+						res.send(err);
+					});
+			})
+			.catch(err => {
+				console.log('err:', err);
+				res.send(err);
+			});
+	}
 }
 
 function getMessages(req, res) {
@@ -630,6 +646,11 @@ function getUserStats(req, res) {
 								},
 							},
 						],
+						numMessageZeroLikes: [
+							{ $match: { user_id: user.user_id } },
+							{ $match: { favorited_by: { $eq: [] } } },
+							{ $count: 'numMessageZeroLikes' },
+						],
 						topTenMessageDays: [
 							{
 								$match: {
@@ -770,6 +791,8 @@ function getUserStats(req, res) {
 						avgLikesPerMessage: Number(
 							data[0].avgLikesPerMessage[0].avgLikesPerMessage.toFixed(2)
 						),
+						numMessageZeroLikes:
+							data[0].numMessageZeroLikes[0].numMessageZeroLikes,
 						topTenMessageDays: data[0].topTenMessageDays,
 						topTenLikesReceivedDays: data[0].topTenLikesReceivedDays,
 						topTenLikesGivenOutDays: data[0].topTenLikesGivenOutDays,
@@ -1025,10 +1048,9 @@ function topTen(req, res) {
 		});
 }
 
-// getUserStats();
-
 module.exports = {
 	getLastMsgID,
+	randomMessage,
 	getMessages,
 	addMessages,
 	updateMessages,

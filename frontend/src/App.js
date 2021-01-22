@@ -23,6 +23,8 @@ import FormatListNumberedIcon from '@material-ui/icons/FormatListNumbered';
 import IconButton from '@material-ui/core/IconButton';
 import Link from '@material-ui/core/Link';
 
+import Moment from 'react-moment';
+
 import './App.scss';
 
 import Users from './containers/Users/Users';
@@ -137,6 +139,7 @@ class App extends Component {
 		let groupAvatar = <img src="" alt=""></img>;
 		let groupDescription = null;
 		let groupName = '';
+		let groupStartDate = null;
 		let routes = null;
 
 		if (this.state.group) {
@@ -150,6 +153,7 @@ class App extends Component {
 
 			groupDescription = <p>{this.state.group.description}</p>;
 			groupName = this.state.group.name;
+			groupStartDate = this.state.group.created_at;
 
 			routes = (
 				<>
@@ -177,7 +181,9 @@ class App extends Component {
 			<div>
 				<div className={classes.toolbar} />
 
-				<Box height={250} overflow={"hidden"}>{groupAvatar}</Box>
+				<Box height={250} overflow={'hidden'}>
+					{groupAvatar}
+				</Box>
 				<Box textAlign="center">{groupDescription}</Box>
 
 				<Divider />
@@ -280,6 +286,12 @@ class App extends Component {
 								{groupName}
 							</Link>
 						</Typography>
+						<Box ml={1}>
+							<Typography>
+								- since{' '}
+								<Moment unix date={groupStartDate} format="MMM D, YYYY" />
+							</Typography>
+						</Box>
 					</Toolbar>
 				</AppBar>
 				<Hidden smUp implementation="css">

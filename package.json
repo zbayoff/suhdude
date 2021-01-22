@@ -17,14 +17,15 @@
     "express-basic-auth": "1.2.0",
     "json2csv": "4.5.4",
     "lodash.isequal": "4.5.0",
+    "moment": "^2.29.1",
     "mongodb": "^3.4.1",
     "mongoose": "5.8.9",
     "request": "^2.88.0",
     "request-promise": "^4.2.5"
   },
   "devDependencies": {
-    "babel-eslint": "^10.0.3",
-    "eslint": "^6.8.0",
+    "babel-eslint": "^10.1.0",
+    "eslint": "^7.18.0",
     "eslint-config-airbnb": "^18.0.1",
     "eslint-config-prettier": "^6.9.0",
     "eslint-plugin-import": "^2.20.0",

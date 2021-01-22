@@ -63,6 +63,13 @@ const rows = [
 		tooltip: 'Total # of likes received',
 	},
 	{
+		id: 'numMessageZeroLikes',
+		numeric: true,
+		disablePadding: false,
+		label: '# Msgs with 0 Likes',
+		tooltip: '# of messages with 0 Likes',
+	},
+	{
 		id: 'numLikedMsgs',
 		numeric: true,
 		disablePadding: false,
@@ -246,9 +253,20 @@ class UserStats extends React.Component {
 											<TableCell component="th" scope="row" padding="none">
 												{user.name}
 											</TableCell>
-											<TableCell align="right">{user.numMessages}</TableCell>
+											<TableCell align="right" style={{whiteSpace: 'nowrap'}}>
+												{user.numMessages}{' '}
+												({((user.numMessages / this.props.group.messages.count) *
+													100).toFixed(1)}
+												%)
+											</TableCell>
 											<TableCell align="right">
 												{user.numLikesReceived}
+											</TableCell>
+											<TableCell align="right" style={{whiteSpace: 'nowrap'}}>
+												{user.numMessageZeroLikes}{' '}
+												({
+													((user.numMessageZeroLikes / user.numMessages) * 100).toFixed(1)
+												})%
 											</TableCell>
 											<TableCell align="right">{user.numLikedMsgs}</TableCell>
 											<TableCell align="right">{user.numSelfLikes}</TableCell>

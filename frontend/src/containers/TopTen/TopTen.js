@@ -118,7 +118,6 @@ class TopTen extends Component {
 		let topTenItems = null;
 		let topTenMessageDays = null;
 		let topTenLikesDays = null;
-		let userTopTen = null;
 
 		let topTenMessageDaysUser = null;
 		let topTenLikesReceivedDays = null;

@@ -79,7 +79,7 @@ const TopTenItem = props => {
 	return (
 		<Grid item xs={12} sm={12} md={12} lg={6} xl={4}>
 			<Paper>
-				<Box height={400} justifyContent={'center'} p={2} position={'relative'}>
+				<Box justifyContent={'center'} p={2} position={'relative'}>
 					<h3>{props.title}</h3>
 
 					{items}
