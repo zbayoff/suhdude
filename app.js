@@ -42,14 +42,14 @@ const app = express();
 
 app.use(cors());
 
-// app.use(
-// 	basicAuth({
-// 		challenge: true,
-// 		users: {
-// 			[NPM_CONFIG_BASIC_AUTH_USER]: NPM_CONFIG_BASIC_AUTH_PWD,
-// 		},
-// 	})
-// );
+app.use(
+	basicAuth({
+		challenge: true,
+		users: {
+			[NPM_CONFIG_BASIC_AUTH_USER]: NPM_CONFIG_BASIC_AUTH_PWD,
+		},
+	})
+);
 
 // app.use(express.static(path.join(__dirname, 'frontend/build')));
 app.use(express.static(path.join(__dirname, 'frontend/build')));
