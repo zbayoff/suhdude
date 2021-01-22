@@ -118,9 +118,12 @@ class Message extends Component {
 
 		let avatar = null;
 
+		console.log('this.props.message: ', this.props.message)
+
 		if (
 			this.props.message.user_id === 'system' ||
-			this.props.message.user_id === 'calendar'
+			this.props.message.user_id === 'calendar' ||
+			this.props.message.sender_type === 'bot'
 		) {
 			avatar = (
 				<ListItemAvatar>
