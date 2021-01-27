@@ -122,7 +122,7 @@ class App extends Component {
 
 	updatedMessages() {
 		return axios
-			.get('/api/updateMessages/18834987?num=300')
+			.get('/api/updateMessages/18834987?num=1000')
 			.then(response => {
 				console.log('updateMessages response: ', response);
 			})
