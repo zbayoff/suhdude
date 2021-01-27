@@ -3,10 +3,13 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 const basicAuth = require('express-basic-auth');
+const tracer = require('dd-trace');
 
 require('dotenv').config();
 require('./api/models/group');
 require('./api/models/message');
+
+tracer.init();
 
 const {
 	DB_PASS,
@@ -14,6 +17,8 @@ const {
 	NPM_CONFIG_BASIC_AUTH_USER,
 	NPM_CONFIG_BASIC_AUTH_PWD,
 } = process.env;
+
+// This line must come before importing any instrumented module.
 
 const port = process.env.PORT || 8080;
 const uri = `mongodb+srv://zbayoff:${DB_PASS}@suhdude-6eldc.mongodb.net/${DB_NAME}?retryWrites=true&w=majority`;
