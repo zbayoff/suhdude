@@ -119,9 +119,8 @@ class Message extends Component {
 		let avatar = null;
 
 		if (
-			this.props.message.user_id === 'system' ||
-			this.props.message.user_id === 'calendar' ||
-			this.props.message.sender_type === 'bot'
+			// for bots, system msgs, and users no longer in the group
+			!this.getUserInfo(this.props.message.user_id)
 		) {
 			avatar = (
 				<ListItemAvatar>
