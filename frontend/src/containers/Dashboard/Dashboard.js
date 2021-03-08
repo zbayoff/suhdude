@@ -148,7 +148,7 @@ class Dashboard extends Component {
 	}
 
 	renderChart() {
-		if (this.state.loadingMessages === false) {
+		if (this.state.loadingMessages === false && this.state.messages.length) {
 			return (
 				<MessageTimeSeriesChart
 					messages={this.state.messages}
