@@ -139,7 +139,7 @@ async function uploadAllMessages(req, res) {
 
 	// console.log('lastMsgIDs: ', lastMsgIDs);
 	const all = [];
-	while (messageCount < 100) {
+	while (messageCount < totalMessageCount) {
 		console.log('Getting messages from lastID: ', lastMsgIDs);
 		console.log('messageCount: ', messageCount);
 		const lastMessages = await getMessages(groupID, lastMsgIDs);

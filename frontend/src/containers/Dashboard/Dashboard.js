@@ -148,16 +148,20 @@ class Dashboard extends Component {
 	}
 
 	renderChart() {
-		if (this.state.loadingMessages === false) {
+		if (this.state.loadingMessages === false && this.state.messages.length) {
 			return (
 				<MessageTimeSeriesChart
 					messages={this.state.messages}
 					series={this.state.series}
 				/>
 			);
+		} else if (!this.state.messages.length) {
+			return "No messages for today :/"
+		} else {
+			return <CircularProgress />;
 		}
 
-		return <CircularProgress />;
+		
 	}
 
 	startDateChangeHandler = date => {

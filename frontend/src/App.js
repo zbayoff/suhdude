@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { Route, NavLink } from 'react-router-dom';
+import { connect } from 'react-redux';
 import axios from 'axios';
 
 import CssBaseline from '@material-ui/core/CssBaseline';
@@ -32,6 +33,9 @@ import UserStats from './containers/Users/UserStats';
 import Messages from './containers/Messages/Messages';
 import Dashboard from './containers/Dashboard/Dashboard';
 import TopTen from './containers/TopTen/TopTen';
+
+import { fetchGroup } from './store/actions/group';
+import { addMessages } from './store/actions/messages'
 
 const drawerWidth = 240;
 
@@ -80,27 +84,21 @@ const styles = theme => {
 
 class App extends Component {
 	state = {
-		group: null,
 		mobileOpen: false,
 	};
 
 	componentDidMount() {
-		axios
-			.get(`/groupmeApi/group/18834987`)
-			.then(response => {
-				this.setState({ group: response.data });
-			})
-			.catch(err => {
-				console.log(err);
-			});
+		this.props.onfetchGroup();
 
-		this.addMessages()
-			.then(() => {
-				console.log('addedMessages successfully');
-			})
-			.catch(err => {
-				console.log(err);
-			});
+		this.props.onAddMessages();
+
+		// this.addMessages()
+		// 	.then(() => {
+		// 		console.log('addedMessages successfully');
+		// 	})
+		// 	.catch(err => {
+		// 		console.log(err);
+		// 	});
 
 		this.updatedMessages()
 			.then(() => {
@@ -111,14 +109,14 @@ class App extends Component {
 			});
 	}
 
-	addMessages() {
-		return axios
-			.get('/api/addMessages/18834987')
-			.then(response => {
-				console.log('addMessages response: ', response);
-			})
-			.catch(err => console.log(err));
-	}
+	// addMessages() {
+	// 	return axios
+	// 		.get('/api/addMessages/18834987')
+	// 		.then(response => {
+	// 			console.log('addMessages response: ', response);
+	// 		})
+	// 		.catch(err => console.log(err));
+	// }
 
 	updatedMessages() {
 		return axios
@@ -134,7 +132,7 @@ class App extends Component {
 	};
 
 	render() {
-		const { classes, theme } = this.props;
+		const { classes, theme, group } = this.props;
 
 		let groupAvatar = <img src="" alt=""></img>;
 		let groupDescription = null;
@@ -142,18 +140,18 @@ class App extends Component {
 		let groupStartDate = null;
 		let routes = null;
 
-		if (this.state.group) {
+		if (group) {
 			groupAvatar = (
 				<img
 					className={classes.groupMeImge}
-					src={this.state.group.image_url}
+					src={group.image_url}
 					alt="groupMe avatar"
 				></img>
 			);
 
-			groupDescription = <p>{this.state.group.description}</p>;
-			groupName = this.state.group.name;
-			groupStartDate = this.state.group.created_at;
+			groupDescription = <p>{group.description}</p>;
+			groupName = group.name;
+			groupStartDate = group.created_at;
 
 			routes = (
 				<>
@@ -161,17 +159,17 @@ class App extends Component {
 					<Route
 						path="/user-stats"
 						exact={true}
-						render={props => <UserStats group={this.state.group} {...props} />}
+						render={props => <UserStats group={group} {...props} />}
 					/>
 					<Route
 						path="/top-ten"
 						exact={true}
-						render={props => <TopTen group={this.state.group} {...props} />}
+						render={props => <TopTen group={group} {...props} />}
 					/>
 					<Route
 						path="/messages"
 						exact={true}
-						render={props => <Messages group={this.state.group} {...props} />}
+						render={props => <Messages group={group} {...props} />}
 					/>{' '}
 				</>
 			);
@@ -327,7 +325,7 @@ class App extends Component {
 					<Route
 						path="/"
 						exact={true}
-						render={props => <Dashboard group={this.state.group} {...props} />}
+						render={props => <Dashboard group={group} {...props} />}
 					/>
 					{routes}
 				</main>
@@ -336,4 +334,22 @@ class App extends Component {
 	}
 }
 
-export default withStyles(styles, { withTheme: true })(App);
+const mapStateToProps = state => {
+	return {
+		group: state.group.group,
+		error: state.group.error,
+	};
+};
+
+const mapDispatchToProps = dispatch => {
+	return {
+		// setGroup: () => dispatch(setGroup()),
+		onfetchGroup: () => dispatch(fetchGroup()),
+		onAddMessages: () => dispatch(addMessages())
+	};
+};
+
+export default connect(
+	mapStateToProps,
+	mapDispatchToProps
+)(withStyles(styles, { withTheme: true })(App));

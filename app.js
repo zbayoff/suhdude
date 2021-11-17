@@ -21,8 +21,8 @@ const {
 // This line must come before importing any instrumented module.
 
 const port = process.env.PORT || 8080;
-const uri = `mongodb+srv://zbayoff:${DB_PASS}@suhdude-6eldc.mongodb.net/${DB_NAME}?retryWrites=true&w=majority`;
-// const uri = `mongodb://localhost:27017/?readPreference=primary&appname=MongoDB%20Compass&ssl=false`;
+// const uri = `mongodb+srv://zbayoff:${DB_PASS}@suhdude-6eldc.mongodb.net/${DB_NAME}?retryWrites=true&w=majority`;
+const uri = `mongodb://localhost:27017/?readPreference=primary&appname=MongoDB%20Compass&ssl=false`;
 
 mongoose
 	.connect(uri, {
@@ -47,14 +47,14 @@ const app = express();
 
 app.use(cors());
 
-app.use(
-	basicAuth({
-		challenge: true,
-		users: {
-			[NPM_CONFIG_BASIC_AUTH_USER]: NPM_CONFIG_BASIC_AUTH_PWD,
-		},
-	})
-);
+// app.use(
+// 	basicAuth({
+// 		challenge: true,
+// 		users: {
+// 			[NPM_CONFIG_BASIC_AUTH_USER]: NPM_CONFIG_BASIC_AUTH_PWD,
+// 		},
+// 	})
+// );
 
 // app.use(express.static(path.join(__dirname, 'frontend/build')));
 app.use(express.static(path.join(__dirname, 'frontend/build')));

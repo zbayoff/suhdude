@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import axios from 'axios';
+import { connect } from 'react-redux';
 
 import Box from '@material-ui/core/Box';
 import Container from '@material-ui/core/Container';
@@ -11,21 +12,16 @@ import { Typography } from '@material-ui/core';
 
 import User from '../../components/User/User';
 
+import { fetchUsers } from '../../store/actions/users';
+
 class Users extends Component {
 	state = {
-		users: [],
 		open: false,
 		selectedUser: null,
 	};
 
 	componentDidMount() {
-		axios
-			.get('/api/users')
-			.then(response => {
-				const users = response.data;
-				this.setState({ users: [...users] });
-			})
-			.catch(err => console.log(err));
+		this.props.onFetchUsers();
 	}
 
 	handleClickOpen = () => {
@@ -56,8 +52,8 @@ class Users extends Component {
 			selectedUser = <Box>{nicknames}</Box>;
 		}
 
-		if (this.state.users) {
-			let users = this.state.users;
+		if (this.props.users) {
+			let users = this.props.users;
 			userMap = users.map(user => {
 				return (
 					<User
@@ -93,4 +89,16 @@ class Users extends Component {
 	}
 }
 
-export default Users;
+const mapStateToProps = state => {
+	return {
+		users: state.users.users,
+	};
+};
+
+const mapDispatchToProps = dispatch => {
+	return {
+		onFetchUsers: () => dispatch(fetchUsers()),
+	};
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(Users);

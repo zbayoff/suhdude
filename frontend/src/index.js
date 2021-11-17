@@ -1,15 +1,34 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import thunk from 'redux-thunk';
 import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
 import { HashRouter } from 'react-router-dom';
+import { Provider } from 'react-redux';
+import { createStore, compose, applyMiddleware, combineReducers } from 'redux';
+import groupReducer from './store/reducers/group';
+import usersReducer from './store/reducers/users';
+import messagesReducer from './store/reducers/messages';
 import 'typeface-roboto';
 
+const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
+
+const rootReducer = combineReducers({
+	group: groupReducer,
+	users: usersReducer,
+	messages: messagesReducer
+
+})
+
+const store = createStore(rootReducer, composeEnhancers(applyMiddleware(thunk)));
+
 const app = (
-	<HashRouter>
-		<App />
-	</HashRouter>
+	<Provider store={store}>
+		<HashRouter>
+			<App />
+		</HashRouter>
+	</Provider>
 );
 
 ReactDOM.render(app, document.getElementById('root'));
