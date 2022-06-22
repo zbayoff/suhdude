@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "async": "3.1.1",
+    "async": "3.2.2",
     "axios": "^0.21.1",
     "cors": "2.8.5",
     "dd-trace": "^0.30.5",
