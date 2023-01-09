@@ -13,10 +13,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "async": "3.1.1",
-    "axios": "^0.21.1",
+    "axios": "^1.2.2",
     "cors": "2.8.5",
-    "dd-trace": "^0.30.5",
+    "dd-trace": "^3.10.0",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "express-basic-auth": "1.2.0",
@@ -24,19 +23,19 @@
     "lodash.isequal": "4.5.0",
     "moment": "^2.29.1",
     "mongodb": "^3.4.1",
-    "mongoose": "5.8.9",
+    "mongoose": "6.8.3",
     "request": "^2.88.0",
     "request-promise": "^4.2.5"
   },
   "devDependencies": {
     "babel-eslint": "^10.1.0",
     "eslint": "^7.18.0",
-    "eslint-config-airbnb": "^18.0.1",
-    "eslint-config-prettier": "^6.9.0",
-    "eslint-plugin-import": "^2.20.0",
-    "eslint-plugin-jsx-a11y": "^6.2.3",
-    "eslint-plugin-prettier": "^3.1.2",
-    "eslint-plugin-react": "^7.17.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-prettier": "^8.6.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-jsx-a11y": "^6.6.1",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-react": "^7.31.11",
     "prettier": "^1.19.1"
   }
 }

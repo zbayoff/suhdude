@@ -1,12 +1,11 @@
 // Create functions to query the suh-dude db.
 // Retreiving messages, group info from db for frontend app to hit.
 
-const async = require('async');
 const isEqual = require('lodash.isequal');
 const moment = require('moment');
 
 const mongoose = require('mongoose');
-const querystring = require('querystring');
+// const querystring = require('querystring');
 
 const groupmeController = require('./groupmeController');
 
