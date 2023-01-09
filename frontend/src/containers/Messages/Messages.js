@@ -366,6 +366,26 @@ class Messages extends Component {
 				endDate = moment('2019-12-31');
 				favorited = true;
 				break;
+			case '2020':
+				startDate = moment('2020-01-01');
+				endDate = moment('2020-12-31');
+				favorited = true;
+				break;
+			case '2021':
+				startDate = moment('2021-01-01');
+				endDate = moment('2021-12-31');
+				favorited = true;
+				break;
+			case '2022':
+				startDate = moment('2022-01-01');
+				endDate = moment('2022-12-31');
+				favorited = true;
+				break;
+			case '2023':
+				startDate = moment('2023-01-01');
+				endDate = moment('2023-12-31');
+				favorited = true;
+				break;
 			case 'all':
 				startDate = moment.unix(this.props.group.created_at);
 				endDate = moment();
@@ -493,8 +513,7 @@ class Messages extends Component {
 		let messagesMap = null;
 		let messageTime = false;
 
-		messagesMap = messagesArray.map((message, index, msgsArray) => {			
-
+		messagesMap = messagesArray.map((message, index, msgsArray) => {
 			if (index === 0) {
 				messageTime = true;
 			} else if (
@@ -623,6 +642,10 @@ class Messages extends Component {
 									<MenuItem value={'1w'}>This Week</MenuItem>
 									<MenuItem value={'1m'}>This Month</MenuItem>
 									<MenuItem value={'1y'}>This Year</MenuItem>
+									<MenuItem value={'2023'}>2023</MenuItem>
+									<MenuItem value={'2022'}>2022</MenuItem>
+									<MenuItem value={'2021'}>2021</MenuItem>
+									<MenuItem value={'2020'}>2020</MenuItem>
 									<MenuItem value={'2019'}>2019</MenuItem>
 									<MenuItem value={'2018'}>2018</MenuItem>
 									<MenuItem value={'2017'}>2017</MenuItem>
