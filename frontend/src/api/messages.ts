@@ -19,3 +19,20 @@ export const updateMessages = async () => {
 		console.error('error fetching group: ', error);
 	}
 };
+
+export const getMessages = (
+	fromTS: string,
+	toTS: string,
+	dashboard: boolean
+) => {
+	return axios.get(`/api/messages`, {
+		params: {
+			fromTS: fromTS,
+			toTS: toTS,
+			userIDs: [],
+			favorited: false,
+			dashboard,
+			skip: 0,
+		},
+	});
+};

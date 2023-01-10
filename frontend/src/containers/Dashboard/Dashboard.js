@@ -13,7 +13,7 @@ import { TimeSeries } from 'pondjs';
 
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 
-import { getMessages } from '../../utils/apiHelper';
+import { getMessages } from '../../api/messages';
 
 import 'react-dates/initialize';
 import { DateRangePicker } from 'react-dates';
