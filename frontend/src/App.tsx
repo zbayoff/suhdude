@@ -127,11 +127,7 @@ const App = () => {
 		routes = (
 			<>
 				<Route path="/users" exact={true} component={Users} />
-				<Route
-					path="/user-stats"
-					exact={true}
-					render={props => <UserStats group={group} {...props} />}
-				/>
+				<Route path="/user-stats" exact={true} render={() => <UserStats />} />
 				<Route
 					path="/top-ten"
 					exact={true}
