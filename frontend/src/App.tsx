@@ -128,11 +128,7 @@ const App = () => {
 			<>
 				<Route path="/users" exact={true} component={Users} />
 				<Route path="/user-stats" exact={true} render={() => <UserStats />} />
-				<Route
-					path="/top-ten"
-					exact={true}
-					render={props => <TopTen group={group} {...props} />}
-				/>
+				<Route path="/top-ten" exact={true} render={() => <TopTen />} />
 				<Route
 					path="/messages"
 					exact={true}

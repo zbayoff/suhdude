@@ -34,7 +34,7 @@ mongoose
 		process.exit();
 	});
 
-mongoose.set('debug', true);
+// mongoose.set('debug', true);
 
 const groupmeRoutes = require('./api/routes/groupmeRoutes');
 const suhdudeRoutes = require('./api/routes/suhdudeRoutes');
