@@ -6,7 +6,7 @@ export const addMessages = async () => {
 
 		return data;
 	} catch (error) {
-		console.error('error fetching group: ', error);
+		console.error('error adding messages: ', error);
 	}
 };
 
@@ -16,7 +16,7 @@ export const updateMessages = async () => {
 
 		return data;
 	} catch (error) {
-		console.error('error fetching group: ', error);
+		console.error('error updating messages: ', error);
 	}
 };
 

@@ -32,8 +32,8 @@ import Messages from './containers/Messages/Messages';
 import Dashboard from './containers/Dashboard/Dashboard';
 import TopTen from './containers/TopTen/TopTen';
 import { useQuery } from '@tanstack/react-query';
-import { fetchGroup } from './api/group';
 import { addMessages, updateMessages } from './api/messages';
+import { useGroupContext } from './group-context';
 
 const drawerWidth = 240;
 
@@ -81,19 +81,18 @@ const useStyles = makeStyles((theme: any) => ({
 const App = () => {
 	const [mobileOpen, setMobileOpen] = useState(false);
 
-	const { data: group } = useQuery({
-		queryKey: ['fetchGroup'],
-		queryFn: fetchGroup,
-	});
+	const { group } = useGroupContext();
 
 	useQuery({
 		queryKey: ['addMessages'],
 		queryFn: addMessages,
+		staleTime: 0,
 	});
 
 	useQuery({
 		queryKey: ['updateMessages'],
 		queryFn: updateMessages,
+		staleTime: 0,
 	});
 
 	const handleDrawerToggle = () => {
@@ -108,7 +107,7 @@ const App = () => {
 	let groupAvatar = <img src="" alt=""></img>;
 	let groupDescription = null;
 	let groupName = '';
-	let groupStartDate = null;
+	let groupStartDate = 0;
 	let routes = null;
 
 	if (group) {

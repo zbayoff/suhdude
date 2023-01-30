@@ -164,8 +164,6 @@ class Messages extends Component {
 			.then(response => {
 				const messages = response.data;
 
-				// console.log('messages: ', messages)
-
 				if (this.state.messages.length && this.state.favorited !== true) {
 					if (messages.length) {
 						this.setState(prevState => ({

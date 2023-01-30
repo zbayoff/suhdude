@@ -10,8 +10,11 @@ import Paper from '@material-ui/core/Paper';
 import Box from '@material-ui/core/Box';
 import { CircularProgress, Typography } from '@material-ui/core';
 import { useQuery } from '@tanstack/react-query';
-import { fetchUserStats, UserStats as UserStatsType } from '../../api/users';
-import { fetchGroup } from '../../api/group';
+import {
+	fetchUserStats,
+	UserStatsAggregationResponse as UserStatsType,
+} from '../../api/users';
+import { useGroupContext } from '../../group-context';
 
 function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
 	if (b[orderBy] < a[orderBy]) {
@@ -70,6 +73,12 @@ const headCells: readonly HeadCell[] = [
 		label: '# Msgs',
 	},
 	{
+		id: 'numGifs',
+		numeric: true,
+		disablePadding: false,
+		label: '# Gifs',
+	},
+	{
 		id: 'numLikesReceived',
 		numeric: true,
 		disablePadding: false,
@@ -106,7 +115,7 @@ const headCells: readonly HeadCell[] = [
 		label: 'Avg Likes Per Liked Msg',
 	},
 	{
-		id: 'numdistinctNicknames',
+		id: 'numDistinctNicknames',
 		numeric: true,
 		disablePadding: false,
 		label: '# Names',
@@ -178,14 +187,12 @@ const UserStats = () => {
 	const [order, setOrder] = useState<Order>('desc');
 	const [orderBy, setOrderBy] = useState<keyof UserStatsType>('numMessages');
 
+	const { group } = useGroupContext();
+
 	const { data: userStats, isLoading: loadingUserStats } = useQuery({
 		queryKey: ['fetchUserStats'],
 		queryFn: fetchUserStats,
-	});
-
-	const { data: group } = useQuery({
-		queryKey: ['fetchGroup'],
-		queryFn: fetchGroup,
+		enabled: !!group,
 	});
 
 	const classes = useStyles();
@@ -240,6 +247,14 @@ const UserStats = () => {
 													).toFixed(1)}
 													%)
 												</TableCell>
+												<TableCell
+													align="right"
+													style={{ whiteSpace: 'nowrap' }}
+												>
+													{user.numGifs} (
+													{((user.numGifs / user.numMessages) * 100).toFixed(1)}
+													%)
+												</TableCell>
 												<TableCell align="right">
 													{user.numLikesReceived}
 												</TableCell>
@@ -261,7 +276,7 @@ const UserStats = () => {
 													{user.avgLikesPerMessage}
 												</TableCell>
 												<TableCell align="right">
-													{user.numdistinctNicknames}
+													{user.numDistinctNicknames}
 												</TableCell>
 											</TableRow>
 										);

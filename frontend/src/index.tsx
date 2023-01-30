@@ -5,13 +5,16 @@ import App from './App';
 import { HashRouter } from 'react-router-dom';
 import 'typeface-roboto';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { GroupContextProvider } from './group-context';
 
 const queryClient = new QueryClient();
 
 const app = (
 	<HashRouter>
 		<QueryClientProvider client={queryClient}>
-			<App />
+			<GroupContextProvider>
+				<App />
+			</GroupContextProvider>
 		</QueryClientProvider>
 	</HashRouter>
 );

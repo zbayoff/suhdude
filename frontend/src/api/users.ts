@@ -22,47 +22,24 @@ export const fetchUsers = async () => {
 	}
 };
 
-type topTenMessageDays = {
-	_id: string;
-	count: number;
-};
-
-type topTenLikesReceivedDays = {
-	_id: string;
-	count: number;
-};
-
-type topTenLikesGivenOutDays = {
-	_id: string;
-	count: number;
-};
-
-export interface UserStats {
-	user_id: string;
-	nickname: string;
-	image_url: string;
-	id: string;
-	muted: boolean;
-	autokicked: boolean;
-	roles: string[];
-	name: string;
-	distinctNicknames: string[];
+export interface UserStatsAggregationResponse extends User {
 	numMessages: number;
+	numGifs: number;
 	numLikesReceived: number;
 	numLikedMsgs: number;
 	numSelfLikes: number;
-	likesToMsgs: number;
-	numdistinctNicknames: number;
+	distinctNicknames: string[];
+	numDistinctNicknames: number;
 	avgLikesPerMessage: number;
 	numMessageZeroLikes: number;
-	topTenMessageDays: topTenMessageDays[];
-	topTenLikesReceivedDays: topTenLikesReceivedDays[];
-	topTenLikesGivenOutDays: topTenLikesGivenOutDays[];
+	likesToMsgs: number;
 }
 
 export const fetchUserStats = async () => {
 	try {
-		const { data }: { data: UserStats[] } = await axios.get(`/api/userStats`);
+		const { data }: { data: UserStatsAggregationResponse[] } = await axios.get(
+			`/api/userStats`
+		);
 
 		return data;
 	} catch (error) {

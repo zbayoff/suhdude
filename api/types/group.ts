@@ -1,11 +1,3 @@
-import axios from 'axios';
-
-export interface HttpPromiseError {
-	data: any;
-	isCancelled: boolean;
-	status: number;
-  }
-
 export interface Group {
 	id: string;
 	group_id: string;
@@ -64,15 +56,3 @@ export interface Group {
 	visibility: string;
 	category_ids: null;
 }
-
-export const fetchGroup = async () => {
-	try {
-		const { data }: { data: Group } = await axios.get(
-			`/groupmeApi/group/18834987`
-		);
-
-		return data;
-	} catch (error) {
-		console.error('error fetching group: ', error);
-	}
-};

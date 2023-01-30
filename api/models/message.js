@@ -17,7 +17,7 @@ const messageSchema = new Schema(
 		sender_type: String,
 		source_guid: String,
 		system: Boolean,
-		user_id: String,
+		user_id: { type: String, index: true },
 		platform: String,
 	},
 	{ strict: false }

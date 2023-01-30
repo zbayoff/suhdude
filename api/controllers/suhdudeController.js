@@ -2,12 +2,16 @@
 // Retreiving messages, group info from db for frontend app to hit.
 
 const isEqual = require('lodash.isequal');
+
+const _ = require('lodash');
+
 const moment = require('moment');
 
 const mongoose = require('mongoose');
 // const querystring = require('querystring');
 
 const groupmeController = require('./groupmeController');
+// const { getAllMessageGifs } = require('./messages.ts');
 
 const Message = mongoose.model('Message');
 const RandomMessage = mongoose.model('RandomMessage');
@@ -43,15 +47,14 @@ async function addMessages(req, res) {
 		all.push(...lastMessages);
 	}
 
-	// remove duplicates from all array
-	const uniqueMessages = [...new Set(all)];
+	const arrayUniqueByKey = _.uniqBy(all, 'id');
 
-	// console.log('number of messages to insert: ', all.length);
-	Message.insertMany(uniqueMessages, { ordered: false })
+	Message.insertMany(arrayUniqueByKey, { ordered: false })
 		.then(data => {
 			res.send(data);
 		})
 		.catch(err => {
+			console.error('error adding messages: ', err);
 			res.send(err);
 		});
 }
@@ -99,7 +102,6 @@ async function updateMessages(req, res) {
 		.sort({ created_at: -1 })
 		.then(async messages => {
 			let earliestMsgID = messages[0].id + 1;
-			console.log('earliestMsgID: ', earliestMsgID);
 
 			let messageCount = 0;
 			const groupMeMessages = [];
@@ -248,8 +250,6 @@ function getMessages(req, res) {
 		detailMessage,
 		dashboard,
 	} = req.query;
-
-	console.log('skip: ', Number(skip));
 
 	const query = {};
 	const match = {}; // for aggregate by favorited
