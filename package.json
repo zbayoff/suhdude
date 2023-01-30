@@ -10,7 +10,7 @@
     "dev-client": "cd frontend && yarn start",
     "dev-server": "nodemon app.js",
     "start": "ts-node --files ./app.js",
-    "heroku-postbuild": "cd frontend && yarn install && yarn run build"
+    "heroku-postbuild": "tsc & cd frontend && yarn install && yarn run build"
   },
   "author": "",
   "license": "ISC",
