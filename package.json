@@ -8,8 +8,8 @@
   },
   "scripts": {
     "dev-client": "cd frontend && yarn start",
-    "dev-server": "nodemon app.js",
-    "start": "ts-node --files ./app.js",
+    "dev-server": "nodemon ./app.js",
+    "start": "tsc && node ./dist/app.js",
     "heroku-postbuild": "tsc & cd frontend && yarn install && yarn run build"
   },
   "author": "",
@@ -39,6 +39,7 @@
     "babel-eslint": "^10.1.0",
     "eslint": "^7.18.0",
     "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-airbnb-typescript": "^17.0.0",
     "eslint-config-prettier": "^8.6.0",
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-jsx-a11y": "^6.6.1",

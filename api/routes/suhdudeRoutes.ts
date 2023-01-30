@@ -1,7 +1,7 @@
-const express = require('express');
-const suhdudeController = require('../controllers/suhdudeController');
-const { getAllMessageGifs } = require('../controllers/messages.ts');
-const { getUserStats } = require('../controllers/userstats.ts');
+import express from 'express';
+import suhdudeController from '../controllers/suhdudeController';
+import { getAllMessageGifs } from '../controllers/messages';
+import { getUserStats } from '../controllers/userstats';
 
 const router = express.Router();
 
