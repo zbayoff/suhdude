@@ -20,7 +20,7 @@
     "@types/react": "^16.14.34",
     "@types/react-dom": "^16.9.17",
     "@types/react-router-dom": "^5.3.3",
-    "axios": "0.19.2",
+    "axios": "0.21.2",
     "date-fns": "2.0.0-beta.5",
     "linkifyjs": "2.1.9",
     "moment": "2.24.0",
